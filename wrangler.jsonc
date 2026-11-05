@@ -1,0 +1,16 @@
+{
+  "name": "agenda",
+  "main": "src/index.js",
+  "compatibility_date": "2025-07-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "agenda",
+      "database_id": "e1225149-490b-464b-802c-fa14c0cbdc15"
+    }
+  ]
+}

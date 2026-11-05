@@ -1,6 +1,5 @@
-// Agenda de Cílios — Cloudflare Pages (modo avançado)
-// Precisa de: banco D1 ligado como "DB" e a variável secreta "SENHA".
-
+// Agenda de Cílios — Cloudflare Worker
+// Precisa de: banco D1 ligado como "DB" (wrangler.jsonc) e o segredo "SENHA".
 const SEED = [
   ["2026-11-03", "10:00", "Letícia", "henna", 30, 60],
   ["2026-11-03", "17:40", "Gio", "manu", 50, 200],
