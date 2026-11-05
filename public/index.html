@@ -247,6 +247,16 @@ textarea.in { resize: vertical; min-height: 64px; }
 .conv .acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .slot.ro { cursor: default; }
 .fab { display: none; }
+.home h2.hi { font-size: 26px; margin-bottom: 4px; }
+.home .sub { color: var(--muted); margin: 0 0 18px; }
+.home h3.sec { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 22px 0 10px; font-family: var(--font-body); }
+.home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+.ag-card { text-align: left; width: 100%; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--accent); border-radius: 14px; padding: 16px; display: grid; gap: 6px; min-width: 0; }
+.ag-card:hover { background: var(--surface-2); }
+.ag-card.shared { border-top-color: var(--c-colo); }
+.ag-card .nm { font-family: var(--font-display); font-size: 19px; font-weight: 700; overflow-wrap: anywhere; }
+.ag-card .info { color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.ag-card.novo { border: 2px dashed var(--line); border-top-width: 2px; background: transparent; align-content: center; justify-items: center; text-align: center; min-height: 110px; color: var(--accent); font-weight: 700; }
 @media (max-width: 820px) {
   .fab { display: block; position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 40; width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); font-size: 30px; line-height: 1; box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 45%, transparent); }
   .top .btn.primary { display: none; }
@@ -266,7 +276,7 @@ body { margin: 0; }
   <header class="top">
     <div class="brand">
       <h1>Agenda</h1>
-      <span>Horários, clientes e ganhos</span>
+      <span id="brand-sub">Horários, clientes e ganhos</span>
     </div>
     <nav class="tabs" role="tablist" aria-label="Seções">
       <button class="tab" role="tab" data-a="tab" data-v="agenda" id="tab-agenda">📅 Agenda</button>
@@ -281,6 +291,8 @@ body { margin: 0; }
     <span id="ub-text"></span>
     <select class="in" id="ub-agenda" aria-label="Agenda" hidden></select>
     <span class="rolepill" id="ub-role" hidden></span>
+    <button class="btn sm" data-a="home" id="ub-home" hidden>🏠 Início</button>
+    <button class="btn sm" data-a="ags" id="ub-ags">🗂️ Agendas</button>
     <button class="btn sm" data-a="share" id="ub-share" hidden>👥 Compartilhar</button>
     <button class="btn sm" data-a="theme" id="ub-theme" aria-label="Alternar tema claro e escuro">🌙</button>
     <button class="btn sm" data-a="logout">Sair</button>
@@ -373,6 +385,17 @@ body { margin: 0; }
     <div id="inst-body" class="help" style="font-size:15px;color:var(--ink)"></div>
   </div>
 </div>
+<div class="backdrop" id="ags" hidden style="align-items:center;justify-content:center">
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="ags-title" style="width:min(480px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto">
+    <div class="sheet-head"><h2 id="ags-title">Minhas agendas</h2><button class="icon-btn" data-a="ags-close" aria-label="Fechar">✕</button></div>
+    <p class="help">Crie uma agenda para cada tipo de atendimento (por exemplo: Consultas, Barbearia, Unhas). Cada uma tem os próprios horários, serviços e convidados. Para trocar de agenda, use o seletor no topo da tela.</p>
+    <div id="ags-list"></div>
+    <div class="field" style="margin-top:12px"><label for="f-agnome">Nova agenda</label>
+      <div style="display:flex;gap:8px"><input class="in" id="f-agnome" maxlength="40" placeholder="Ex.: Barbearia" autocomplete="off"><button class="btn primary" data-a="ag-new">Criar</button></div>
+    </div>
+    <div class="formerr" id="ags-msg" role="alert" style="margin:0"></div>
+  </div>
+</div>
 <div class="backdrop" id="share" hidden style="align-items:center;justify-content:center">
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="share-title" style="width:min(460px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto">
     <div class="sheet-head"><h2 id="share-title">Compartilhar agenda</h2><button class="icon-btn" data-a="share-close" aria-label="Fechar">✕</button></div>
@@ -420,7 +443,7 @@ body { margin: 0; }
   };
 
   const state = {
-    items: [], svcOver: {}, svcNovo: false, svcDel: null, papel: "dono", pedidos: [], loaded: false, erro: null, user: null, agendas: [], agendaId: null, convidados: [],
+    items: [], svcOver: {}, tela: "agenda", svcNovo: false, svcDel: null, svcPurge: null, papel: "dono", pedidos: [], loaded: false, erro: null, user: null, agendas: [], agendaId: null, convidados: [],
     tab: "agenda", sel: ymd(new Date()),
     cal: { y: new Date().getFullYear(), m: new Date().getMonth() },
     hist: { y: new Date().getFullYear(), m: new Date().getMonth(), f: "all", q: "" }
@@ -428,7 +451,7 @@ body { margin: 0; }
 
   function svcOf(id) {
     const o = state.svcOver[id] || {};
-    const nome = o.nome || (id === "ocupado" ? "Agendado" : "Serviço");
+    const nome = o.nome || (id === "ocupado" ? "Agendado" : "Serviço apagado");
     return { id: id, nome: nome, curto: nome, duracao: o.duracao != null ? o.duracao : 30, valor: "valor" in o ? o.valor : null, renda: o.renda == null ? true : o.renda !== 0 };
   }
   const svcClass = id => (state.svcOver[id] && /^c[0-5]$/.test(state.svcOver[id].cor || "")) ? "svc-" + state.svcOver[id].cor : "svc-x";
@@ -566,6 +589,20 @@ body { margin: 0; }
     return top + '<div class="agenda"><div class="side">' + calHtml() + "</div><div>" + dayHtml() + "</div></div>";
   }
 
+  function homeHtml() {
+    const u = state.user || {};
+    const nome = (u.nome || "").split(" ")[0];
+    const info = a => '<span>' + (a.proximos ? a.proximos + (a.proximos === 1 ? " horário a partir de hoje" : " horários a partir de hoje") : "sem horários próximos") + "</span>" + (a.pedidos ? '<span class="tag warn">✋ ' + a.pedidos + (a.pedidos === 1 ? " pedido" : " pedidos") + "</span>" : "");
+    const minhas = state.agendas.filter(a => a.dono), comp = state.agendas.filter(a => !a.dono);
+    return '<div class="home"><h2 class="hi">Olá' + (nome ? ", " + esc(nome) : "") + "!</h2><p class=\"sub\">Escolha qual agenda abrir.</p>" +
+      '<h3 class="sec">Minhas agendas</h3><div class="home-grid">' +
+      minhas.map(a => '<button class="ag-card" data-a="ag-open" data-id="' + esc(a.id) + '"><span class="nm">' + esc(a.nome) + '</span><span class="info">' + info(a) + "</span></button>").join("") +
+      '<button class="ag-card novo" data-a="ags"><span style="font-size:26px;line-height:1">+</span><span>Nova agenda</span></button></div>' +
+      '<h3 class="sec">Compartilhadas comigo</h3>' +
+      (comp.length ? '<div class="home-grid">' + comp.map(a => '<button class="ag-card shared" data-a="ag-open" data-id="' + esc(a.id) + '"><span class="nm">' + esc(a.nome) + '</span><span class="info"><span class="rolepill">' + (a.papel === "ver" ? "Só ver e pedir horário" : "Pode editar") + "</span>" + info(a) + "</span></button>").join("") + "</div>"
+        : '<p class="help">Quando alguém compartilhar uma agenda com o seu e-mail, ela aparece aqui.</p>') + "</div>";
+  }
+
   function pedidoMeta(r) {
     const s = svcOf(r.servico), d = parseYmd(r.dia);
     return '<span class="chip">' + esc(s.curto) + "</span><span>" + cap(d.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" })) + " · " + r.hora + "–" + fromMin(toMin(r.hora) + (+r.duracao || s.duracao)) + "</span>";
@@ -653,13 +690,15 @@ body { margin: 0; }
         '<div class="formerr" id="ns-err" role="alert"></div><div class="sheet-foot" style="margin-top:6px"><button class="btn primary" data-a="svc-save">Adicionar</button><button class="btn" data-a="svc-cancel">Cancelar</button></div></div>' : "") +
       (!ativos.length && !state.svcNovo ? '<div class="card welcome">' + "<h2>Nenhum serviço ainda</h2><p>Escolha um modelo ou toque em “Adicionar serviço”.</p>" + modelosHtml() + "</div>" : "") +
       '<div class="svc-grid">' + ativos.map(servCard).join("") + "</div>" +
-      (rem.length ? '<h3 class="sec-title">Serviços excluídos</h3><div class="card">' + rem.map(id => '<div class="conv"><span>' + esc(svcOf(id).nome) + '</span><button class="btn sm" data-a="svc-restore" data-id="' + id + '">Restaurar</button></div>').join("") + "</div>" : "") +
+      (rem.length ? '<h3 class="sec-title">Serviços excluídos</h3><div class="card">' + rem.map(id => '<div class="conv"><span>' + esc(svcOf(id).nome) + '</span><span class="acts"><button class="btn sm" data-a="svc-restore" data-id="' + id + '">Restaurar</button><button class="btn sm danger" data-a="svc-purge" data-id="' + id + '">' + (state.svcPurge === id ? "Confirmar: apagar de vez" : "Apagar de vez") + "</button></span></div>" + (state.svcPurge === id ? '<p class="help" style="margin:0 0 8px">' + (state.items.filter(x => x.servico === id).length ? state.items.filter(x => x.servico === id).length + " horário(s) antigo(s) usam este serviço e vão aparecer como “Serviço apagado”. " : "") + "Isso não tem volta.</p>" : "")).join("") + "</div>" : "") +
       '<div class="card" style="margin-top:16px"><h3 style="margin-bottom:6px">Backup</h3><p class="help">Os horários ficam guardados no servidor e aparecem em todos os aparelhos. O backup é uma cópia em arquivo. Importar substitui tudo o que está na agenda.</p><div class="sheet-foot" style="margin-top:0"><button class="btn" data-a="export">Baixar backup</button><button class="btn" data-a="import">Importar backup</button><input type="file" id="imp-file" accept="application/json,.json" hidden></div></div>';
   }
 
   function render() {
     const ae = document.activeElement;
     const keep = ae && ae.id && $("app").contains(ae) ? { id: ae.id, s: ae.selectionStart, e: ae.selectionEnd } : null;
+    const home = state.tela === "home" && state.user;
+    document.querySelector(".tabs").hidden = !!home; $("btn-new").hidden = !!home; $("fab").hidden = !!home;
     if (verSo() && (state.tab === "historico" || state.tab === "servicos")) state.tab = "agenda";
     ["agenda", "pedidos", "historico", "servicos"].forEach(t => $("tab-" + t).setAttribute("aria-selected", String(state.tab === t)));
     $("tab-historico").hidden = verSo(); $("tab-servicos").hidden = verSo();
@@ -667,12 +706,12 @@ body { margin: 0; }
     $("tab-pedidos").innerHTML = "✋ " + (verSo() ? "Meus pedidos" : "Pedidos") + (np && !verSo() ? '<span class="badge">' + np + "</span>" : "");
     $("btn-new").textContent = verSo() ? "+ Pedir horário" : "+ Novo horário";
     $("fab").setAttribute("aria-label", verSo() ? "Pedir horário" : "Novo horário");
-    $("app").innerHTML = state.tab === "agenda" ? agendaHtml() : state.tab === "pedidos" ? pedidosHtml() : state.tab === "historico" ? histHtml() : servHtml();
+    $("app").innerHTML = home ? homeHtml() : state.tab === "agenda" ? agendaHtml() : state.tab === "pedidos" ? pedidosHtml() : state.tab === "historico" ? histHtml() : servHtml();
     if (keep) {
       const el = $(keep.id);
       if (el) { el.focus(); try { el.setSelectionRange(keep.s, keep.e); } catch (e) {} }
     }
-    const msg = state.loaded ? (state.erro ? "Sem conexão. Mostrando a última versão carregada." : "") : (state.erro ? "Não foi possível abrir a agenda: " + state.erro + "." : "Carregando a agenda…");
+    const msg = home ? "" : state.loaded ? (state.erro ? "Sem conexão. Mostrando a última versão carregada." : "") : (state.erro ? "Não foi possível abrir a agenda: " + state.erro + "." : "Carregando a agenda…");
     $("banner").innerHTML = msg ? '<div class="banner" role="status">' + esc(msg) + "</div>" : "";
     const dl = $("clientes");
     const nomes = {};
@@ -869,7 +908,7 @@ body { margin: 0; }
 
   document.addEventListener("click", e => {
     const t = e.target.closest("[data-a]");
-    if (!t) { if (e.target === $("backdrop")) closeSheet(); if (e.target === $("share")) closeShare(); if (e.target === $("inst")) $("inst").hidden = true; return; }
+    if (!t) { if (e.target === $("backdrop")) closeSheet(); if (e.target === $("share")) closeShare(); if (e.target === $("inst")) $("inst").hidden = true; if (e.target === $("ags")) closeAgs(); return; }
     const a = t.dataset.a;
     if (a === "tab") { state.tab = t.dataset.v; location.hash = t.dataset.v; render(); }
     else if (a === "new") openSheet({});
@@ -894,6 +933,13 @@ body { margin: 0; }
     else if (a === "svc-cancel") { state.svcNovo = false; render(); }
     else if (a === "svc-save") novoServico();
     else if (a === "svc-del") apagaServico(t.dataset.id);
+    else if (a === "svc-purge") purgeServico(t.dataset.id);
+    else if (a === "ags") openAgs();
+    else if (a === "ags-close") closeAgs();
+    else if (a === "ag-new") criaAgenda();
+    else if (a === "ag-open") { switchAgenda(t.dataset.id); closeAgs(); }
+    else if (a === "home") { state.tela = "home"; renderUserbar(); loadSessao(true); render(); }
+    else if (a === "ag-del") apagaAgenda(t.dataset.id);
     else if (a === "svc-restore") salvaServico(t.dataset.id, { removido: 0 }, "Serviço restaurado");
     else if (a === "inst-close") $("inst").hidden = true;
     else if (a === "modelo") aplicaModelo(t.dataset.m);
@@ -946,6 +992,49 @@ body { margin: 0; }
       render();
     } catch (e) { if (e.message !== "401") toast("Não foi possível salvar"); }
   }
+  async function purgeServico(id) {
+    if (state.svcPurge !== id) { state.svcPurge = id; render(); return; }
+    state.svcPurge = null;
+    try { await api("/api/servico?id=" + encodeURIComponent(id), { method: "DELETE" }); delete state.svcOver[id]; toast("Serviço apagado"); render(); }
+    catch (e) { if (e.message !== "401") toast("Não foi possível apagar"); }
+  }
+
+  /* ---------- várias agendas ---------- */
+  let agDel = null;
+  function closeAgs() { $("ags").hidden = true; agDel = null; }
+  function openAgs() { $("ags").hidden = false; $("ags-msg").textContent = ""; $("f-agnome").value = ""; rolAgs(); }
+  function rolAgs() {
+    const minhas = state.agendas.filter(a => a.dono);
+    $("ags-list").innerHTML = minhas.map(a => '<div class="conv"><span class="acts" style="flex:1"><input class="in" style="flex:1;min-width:120px" data-agnome="' + esc(a.id) + '" value="' + esc(a.nome) + '" maxlength="40" aria-label="Nome da agenda"></span><span class="acts">' +
+      (a.id === state.agendaId ? '<span class="tag ok">aberta</span>' : '<button class="btn sm" data-a="ag-open" data-id="' + esc(a.id) + '">Abrir</button>') +
+      (a.id === state.user.sub ? "" : '<button class="btn sm danger" data-a="ag-del" data-id="' + esc(a.id) + '">' + (agDel === a.id ? "Confirmar: apagar tudo" : "Excluir") + "</button>") + "</span></div>").join("");
+  }
+  async function criaAgenda() {
+    const nome = $("f-agnome").value.trim(), msg = $("ags-msg"); msg.textContent = "";
+    if (!nome) { msg.textContent = "Dê um nome à agenda."; return; }
+    try {
+      const r = await api("/api/agenda", { method: "POST", body: { nome: nome } });
+      state.agendas.splice(state.agendas.filter(a => a.dono).length, 0, { id: r.id, nome: r.nome, dono: true, papel: "dono" });
+      closeAgs(); switchAgenda(r.id); toast("Agenda criada");
+    } catch (e) { if (e.message !== "401") msg.textContent = e.message; }
+  }
+  async function renomeiaAgenda(id, nome) {
+    nome = nome.trim(); const a = state.agendas.find(x => x.id === id);
+    if (!a || !nome || nome === a.nome) { rolAgs(); return; }
+    try { await api("/api/agenda?agenda=" + encodeURIComponent(id), { method: "PUT", body: { nome: nome } }); a.nome = nome; renderUserbar(); rolAgs(); toast("Nome alterado"); }
+    catch (e) { if (e.message !== "401") $("ags-msg").textContent = e.message; }
+  }
+  async function apagaAgenda(id) {
+    if (agDel !== id) { agDel = id; rolAgs(); return; }
+    agDel = null;
+    try {
+      await api("/api/agenda?agenda=" + encodeURIComponent(id), { method: "DELETE" });
+      state.agendas = state.agendas.filter(a => a.id !== id);
+      if (state.agendaId === id) switchAgenda(state.user.sub); else renderUserbar();
+      rolAgs(); toast("Agenda excluída");
+    } catch (e) { if (e.message !== "401") $("ags-msg").textContent = e.message; }
+  }
+
   async function apagaServico(id) {
     if (state.svcDel !== id) { state.svcDel = id; render(); return; }
     state.svcDel = null;
@@ -992,6 +1081,7 @@ body { margin: 0; }
     const el = e.target;
     if (el.id === "ub-agenda") { switchAgenda(el.value); return; }
     if (el.dataset && el.dataset.papel) { invite(el.dataset.papel, el.value); return; }
+    if (el.dataset && el.dataset.agnome) { renomeiaAgenda(el.dataset.agnome, el.value); return; }
     if (el.id === "imp-file") { importFile(el); return; }
     if (!el.dataset || !el.dataset.sv) return;
     const id = el.dataset.sv, cur = svcOf(id);
@@ -1005,6 +1095,8 @@ body { margin: 0; }
   document.addEventListener("keydown", e => {
     if (e.key === "Escape" && !$("backdrop").hidden) closeSheet();
     if (e.key === "Escape" && !$("share").hidden) closeShare();
+    if (e.key === "Escape" && !$("ags").hidden) closeAgs();
+    if (e.key === "Enter" && e.target.id === "f-agnome") criaAgenda();
     if (e.key === "Enter" && e.target.id === "f-conv") invite();
   });
 
@@ -1021,7 +1113,7 @@ body { margin: 0; }
   async function api(path, opt) {
     opt = opt || {};
     const base = path.split("?")[0];
-    if (!SEM_AGENDA.includes(base) && state.agendaId) path += (path.includes("?") ? "&" : "?") + "agenda=" + encodeURIComponent(state.agendaId);
+    if (!SEM_AGENDA.includes(base) && state.agendaId && !/[?&]agenda=/.test(path)) path += (path.includes("?") ? "&" : "?") + "agenda=" + encodeURIComponent(state.agendaId);
     let res;
     try {
       res = await fetch(path, {
@@ -1075,29 +1167,34 @@ body { margin: 0; }
     bar.hidden = false;
     $("ub-text").textContent = u.nome ? u.nome + " · " + u.email : u.email;
     const sel = $("ub-agenda");
-    sel.hidden = state.agendas.length < 2;
     sel.innerHTML = state.agendas.map(a => '<option value="' + esc(a.id) + '"' + (a.id === state.agendaId ? " selected" : "") + ">" + esc(a.nome) + (a.papel === "ver" ? " (só ver)" : "") + "</option>").join("");
-    $("ub-share").hidden = state.agendaId !== u.sub;
+    $("ub-share").hidden = state.papel !== "dono" || state.tela === "home";
+    $("ub-home").hidden = state.agendas.length < 2 || state.tela === "home";
+    sel.hidden = state.agendas.length < 2 || state.tela === "home";
+    const atual = state.agendas.find(a => a.id === state.agendaId);
+    $("brand-sub").textContent = state.agendas.length > 1 && atual && state.tela !== "home" ? atual.nome : "Horários, clientes e ganhos";
     const rp = $("ub-role");
     rp.hidden = state.papel === "dono";
     rp.textContent = state.papel === "ver" ? "Só visualização · você pode pedir horários" : "Você pode editar";
   }
 
-  async function loadSessao() {
+  async function loadSessao(soLista) {
     try {
-      const s = await api("/api/sessao");
+      const s = await api("/api/sessao?hoje=" + ymd(new Date()));
       state.user = s.user; state.agendas = s.agendas;
+      if (soLista) { renderUserbar(); render(); return; }
+      state.tela = state.agendas.length > 1 ? "home" : "agenda";
       let quer = state.agendaId;
       try { quer = quer || localStorage.getItem(AKEY); } catch (e) {}
       state.agendaId = state.agendas.some(a => a.id === quer) ? quer : s.user.sub;
       const ag0 = state.agendas.find(a => a.id === state.agendaId); state.papel = ag0 ? ag0.papel : "dono";
       hideLogin(); renderUserbar(); state.loaded = false; render();
-      await loadAll();
+      if (state.tela !== "home") await loadAll();
     } catch (e) { if (e.message !== "401") { state.erro = e.message; render(); } }
   }
 
   function switchAgenda(id) {
-    state.agendaId = id;
+    state.agendaId = id; state.tela = "agenda"; state.tab = "agenda"; location.hash = "agenda";
     try { localStorage.setItem(AKEY, id); } catch (e) {}
     state.items = []; state.svcOver = {}; state.pedidos = []; state.loaded = false; state.erro = null;
     const ag = state.agendas.find(a => a.id === id); state.papel = ag ? ag.papel : "dono";
@@ -1111,7 +1208,7 @@ body { margin: 0; }
 
   let loading = false;
   async function loadAll(quiet) {
-    if (loading || !state.user) return;
+    if (loading || !state.user || state.tela === "home") return;
     const ae = document.activeElement;
     if (quiet && ae && ae.id && ae.id.indexOf("sv-") === 0) return;
     loading = true;
@@ -1130,7 +1227,7 @@ body { margin: 0; }
   async function doLogout() {
     try { await api("/api/logout", { method: "POST" }); } catch (e) {}
     try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (e) {}
-    closeSheet(); closeShare();
+    closeSheet(); closeShare(); closeAgs();
     state.user = null; state.agendas = []; state.items = []; state.svcOver = {}; state.pedidos = []; state.papel = "dono"; state.loaded = false; state.agendaId = null; state.erro = null;
     try { localStorage.removeItem(AKEY); } catch (e) {}
     renderUserbar(); render(); showLogin();

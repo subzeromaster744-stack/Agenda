@@ -1,6 +1,6 @@
 // Guarda só a "casca" do app para abrir rápido e funcionar como app instalado.
 // Os dados (/api) nunca ficam em cache: sempre vêm do servidor.
-const V = "agenda-v3";
+const V = "agenda-v4";
 const CASCA = ["/", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(V).then(c => c.addAll(CASCA)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => {

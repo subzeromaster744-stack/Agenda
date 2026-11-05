@@ -11,6 +11,7 @@ const DDL = [
   "CREATE TABLE IF NOT EXISTS ag_servicos (agenda TEXT NOT NULL, id TEXT NOT NULL, nome TEXT NOT NULL, duracao INTEGER NOT NULL, valor REAL, renda INTEGER NOT NULL DEFAULT 1, cor TEXT NOT NULL DEFAULT '', removido INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (agenda, id))",
   "CREATE TABLE IF NOT EXISTS ag_acessos (agenda TEXT NOT NULL, email TEXT NOT NULL, papel TEXT NOT NULL DEFAULT 'editar', PRIMARY KEY (agenda, email))",
   "CREATE TABLE IF NOT EXISTS ag_pedidos (agenda TEXT NOT NULL, id TEXT NOT NULL, de_email TEXT NOT NULL, de_nome TEXT NOT NULL DEFAULT '', cliente TEXT NOT NULL, servico TEXT NOT NULL, dia TEXT NOT NULL, hora TEXT NOT NULL, duracao INTEGER NOT NULL, obs TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'pendente', criado INTEGER NOT NULL, PRIMARY KEY (agenda, id))",
+  "CREATE TABLE IF NOT EXISTS ag_agendas (id TEXT PRIMARY KEY, dono TEXT NOT NULL, nome TEXT NOT NULL, criado INTEGER NOT NULL)",
   "CREATE TABLE IF NOT EXISTS ag_meta (k TEXT PRIMARY KEY, v TEXT NOT NULL)"
 ];
 
@@ -95,9 +96,13 @@ async function usuarioDe(request) {
 // Devolve { id, papel } com papel "dono", "editar" ou "ver"; null se não tem acesso.
 async function agendaPermitida(env, user, id) {
   if (!id || id === user.sub) return { id: user.sub, papel: "dono" };
+  const g = await env.DB.prepare("SELECT dono FROM ag_agendas WHERE id = ?").bind(id).first();
+  if (g && g.dono === user.sub) return { id, papel: "dono" };
   const r = await env.DB.prepare("SELECT papel FROM ag_acessos WHERE agenda = ? AND email = ?").bind(id, user.email).first();
   return r ? { id, papel: r.papel === "ver" ? "ver" : "editar" } : null;
 }
+
+const podeEditarAgenda = perm => perm.papel !== "ver";
 
 function limpaPedido(o) {
   if (!o || typeof o !== "object") return null;
@@ -149,38 +154,39 @@ export default {
       if (!user) return falha("entre com sua conta Google", 401);
 
       if (p === "/api/sessao" && m === "GET") {
+        const minhas = await env.DB.prepare("SELECT id, nome FROM ag_agendas WHERE dono = ? ORDER BY criado").bind(user.sub).all();
+        const padrao = minhas.results.find(r => r.id === user.sub);
+        const extras = minhas.results.filter(r => r.id !== user.sub);
         const rs = await env.DB.prepare(
-          "SELECT a.agenda AS id, a.papel AS papel, u.nome AS nome, u.email AS email FROM ag_acessos a JOIN ag_usuarios u ON u.sub = a.agenda WHERE a.email = ? ORDER BY u.nome, u.email"
+          "SELECT a.agenda AS id, a.papel AS papel, g.nome AS gnome, u.nome AS nome, u.email AS email FROM ag_acessos a LEFT JOIN ag_agendas g ON g.id = a.agenda LEFT JOIN ag_usuarios u ON u.sub = COALESCE(g.dono, a.agenda) WHERE a.email = ? ORDER BY u.nome, u.email, g.criado"
         ).bind(user.email).all();
-        const agendas = [{ id: user.sub, nome: "Minha agenda", dono: true, papel: "dono" }].concat(
-          rs.results.map(r => ({ id: r.id, nome: "Agenda de " + (r.nome || r.email), dono: false, papel: r.papel === "ver" ? "ver" : "editar" }))
-        );
+        const agendas = [{ id: user.sub, nome: (padrao && padrao.nome) || "Minha agenda", dono: true, papel: "dono" }]
+          .concat(extras.map(r => ({ id: r.id, nome: r.nome, dono: true, papel: "dono" })))
+          .concat(rs.results.map(r => {
+            const de = r.nome || r.email || "outra pessoa";
+            return { id: r.id, nome: r.gnome ? r.gnome + " · " + de : "Agenda de " + de, dono: false, papel: r.papel === "ver" ? "ver" : "editar" };
+          }));
+        // resumo para a tela inicial: horários a partir de hoje e pedidos aguardando
+        const hoje = /^\d{4}-\d{2}-\d{2}$/.test(url.searchParams.get("hoje") || "") ? url.searchParams.get("hoje") : new Date().toISOString().slice(0, 10);
+        const ids = agendas.map(a => a.id), ph = ids.map(() => "?").join(",");
+        const pr = await env.DB.prepare("SELECT agenda, COUNT(*) AS n FROM ag_itens WHERE agenda IN (" + ph + ") AND dia >= ? AND status = 'agendado' GROUP BY agenda").bind(...ids, hoje).all();
+        const pd = await env.DB.prepare("SELECT agenda, COUNT(*) AS n FROM ag_pedidos WHERE agenda IN (" + ph + ") AND status = 'pendente' GROUP BY agenda").bind(...ids).all();
+        const mp = {}, mq = {};
+        pr.results.forEach(r => { mp[r.agenda] = r.n; }); pd.results.forEach(r => { mq[r.agenda] = r.n; });
+        agendas.forEach(a => { a.proximos = mp[a.id] || 0; a.pedidos = a.papel === "ver" ? 0 : (mq[a.id] || 0); });
         return json({ user, agendas });
       }
 
-      // Convites: só o dono mexe na própria lista.
-      if (p === "/api/convidados" && m === "GET") {
-        const rs = await env.DB.prepare("SELECT email, papel FROM ag_acessos WHERE agenda = ? ORDER BY email").bind(user.sub).all();
-        return json({ convidados: rs.results.map(r => ({ email: r.email, papel: r.papel === "ver" ? "ver" : "editar" })) });
-      }
-      if (p === "/api/convidar" && m === "POST") {
+      // Criar agenda extra (cada pessoa pode ter várias: consultas, barbearia, unhas...)
+      if (p === "/api/agenda" && m === "POST") {
         const b = await request.json().catch(() => null);
-        const email = String((b && b.email) || "").trim().toLowerCase();
-        if (!/^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/.test(email)) return falha("e-mail inválido", 400);
-        if (email === user.email) return falha("esse é o seu próprio e-mail", 400);
-        const papel = b && b.papel === "ver" ? "ver" : "editar";
-        const ja = await env.DB.prepare("SELECT 1 AS ok FROM ag_acessos WHERE agenda = ? AND email = ?").bind(user.sub, email).first();
-        if (!ja) {
-          const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM ag_acessos WHERE agenda = ?").bind(user.sub).first();
-          if (n.n >= 10) return falha("limite de 10 convidados", 400);
-        }
-        await env.DB.prepare("INSERT INTO ag_acessos (agenda, email, papel) VALUES (?,?,?) ON CONFLICT(agenda, email) DO UPDATE SET papel=excluded.papel").bind(user.sub, email, papel).run();
-        return json({ ok: true });
-      }
-      if (p === "/api/convidar" && m === "DELETE") {
-        const email = String(url.searchParams.get("email") || "").trim().toLowerCase();
-        await env.DB.prepare("DELETE FROM ag_acessos WHERE agenda = ? AND email = ?").bind(user.sub, email).run();
-        return json({ ok: true });
+        const nome = String((b && b.nome) || "").trim().slice(0, 40);
+        if (!nome) return falha("dê um nome à agenda", 400);
+        const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM ag_agendas WHERE dono = ? AND id <> ?").bind(user.sub, user.sub).first();
+        if (n.n >= 10) return falha("limite de 10 agendas", 400);
+        const id = "g" + crypto.randomUUID().replace(/-/g, "").slice(0, 14);
+        await env.DB.prepare("INSERT INTO ag_agendas (id, dono, nome, criado) VALUES (?,?,?,?)").bind(id, user.sub, nome, Date.now()).run();
+        return json({ id, nome });
       }
 
       const perm = await agendaPermitida(env, user, url.searchParams.get("agenda"));
@@ -189,6 +195,65 @@ export default {
       const veSo = perm.papel === "ver";
       const podeEditar = !veSo;
       const SO_VER = "você só tem permissão para ver esta agenda";
+
+      // Renomear / excluir a agenda (só o dono)
+      if (p === "/api/agenda" && m === "PUT") {
+        if (perm.papel !== "dono") return falha("só o dono da agenda pode fazer isso", 403);
+        const b = await request.json().catch(() => null);
+        const nome = String((b && b.nome) || "").trim().slice(0, 40);
+        if (!nome) return falha("dê um nome à agenda", 400);
+        await env.DB.prepare("INSERT INTO ag_agendas (id, dono, nome, criado) VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET nome=excluded.nome").bind(agenda, user.sub, nome, Date.now()).run();
+        return json({ id: agenda, nome });
+      }
+      if (p === "/api/agenda" && m === "DELETE") {
+        if (perm.papel !== "dono") return falha("só o dono da agenda pode fazer isso", 403);
+        if (agenda === user.sub) return falha("a agenda principal não pode ser excluída", 400);
+        await env.DB.batch([
+          env.DB.prepare("DELETE FROM ag_itens WHERE agenda = ?").bind(agenda),
+          env.DB.prepare("DELETE FROM ag_servicos WHERE agenda = ?").bind(agenda),
+          env.DB.prepare("DELETE FROM ag_pedidos WHERE agenda = ?").bind(agenda),
+          env.DB.prepare("DELETE FROM ag_acessos WHERE agenda = ?").bind(agenda),
+          env.DB.prepare("DELETE FROM ag_agendas WHERE id = ?").bind(agenda)
+        ]);
+        return json({ ok: true });
+      }
+
+      // Convites: só o dono mexe na lista da agenda aberta.
+      if (p === "/api/convidados" && m === "GET") {
+        if (perm.papel !== "dono") return falha("só o dono da agenda pode fazer isso", 403);
+        const rs = await env.DB.prepare("SELECT email, papel FROM ag_acessos WHERE agenda = ? ORDER BY email").bind(agenda).all();
+        return json({ convidados: rs.results.map(r => ({ email: r.email, papel: r.papel === "ver" ? "ver" : "editar" })) });
+      }
+      if (p === "/api/convidar" && m === "POST") {
+        if (perm.papel !== "dono") return falha("só o dono da agenda pode fazer isso", 403);
+        const b = await request.json().catch(() => null);
+        const email = String((b && b.email) || "").trim().toLowerCase();
+        if (!/^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/.test(email)) return falha("e-mail inválido", 400);
+        if (email === user.email) return falha("esse é o seu próprio e-mail", 400);
+        const papel = b && b.papel === "ver" ? "ver" : "editar";
+        const ja = await env.DB.prepare("SELECT 1 AS ok FROM ag_acessos WHERE agenda = ? AND email = ?").bind(agenda, email).first();
+        if (!ja) {
+          const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM ag_acessos WHERE agenda = ?").bind(agenda).first();
+          if (n.n >= 10) return falha("limite de 10 convidados", 400);
+        }
+        await env.DB.prepare("INSERT INTO ag_acessos (agenda, email, papel) VALUES (?,?,?) ON CONFLICT(agenda, email) DO UPDATE SET papel=excluded.papel").bind(agenda, email, papel).run();
+        return json({ ok: true });
+      }
+      if (p === "/api/convidar" && m === "DELETE") {
+        if (perm.papel !== "dono") return falha("só o dono da agenda pode fazer isso", 403);
+        const email = String(url.searchParams.get("email") || "").trim().toLowerCase();
+        await env.DB.prepare("DELETE FROM ag_acessos WHERE agenda = ? AND email = ?").bind(agenda, email).run();
+        return json({ ok: true });
+      }
+
+      // Apagar de vez um serviço já excluído
+      if (p === "/api/servico" && m === "DELETE") {
+        if (!podeEditarAgenda(perm)) return falha(SO_VER, 403);
+        const id = url.searchParams.get("id") || "";
+        if (!/^[a-z0-9_-]{1,20}$/.test(id)) return falha("id inválido", 400);
+        const r = await env.DB.prepare("DELETE FROM ag_servicos WHERE agenda = ? AND id = ? AND removido = 1").bind(agenda, id).run();
+        return json({ ok: true, apagado: !!(r.meta && r.meta.changes) });
+      }
 
       if (p === "/api/dados" && m === "GET") {
         const a = await env.DB.prepare(
