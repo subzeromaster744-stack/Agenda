@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#d3366f">
 <title>Agenda de Cílios</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Agenda">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap">
 <style>
@@ -266,6 +273,7 @@ body { margin: 0; }
     <span id="ub-text"></span>
     <select class="in" id="ub-agenda" aria-label="Agenda" hidden></select>
     <span class="rolepill" id="ub-role" hidden></span>
+    <button class="btn sm primary" data-a="install" id="ub-install" hidden>📲 Instalar app</button>
     <button class="btn sm" data-a="share" id="ub-share" hidden>👥 Compartilhar</button>
     <button class="btn sm" data-a="theme" id="ub-theme" aria-label="Alternar tema claro e escuro">🌙</button>
     <button class="btn sm" data-a="logout">Sair</button>
@@ -836,6 +844,7 @@ body { margin: 0; }
     else if (a === "toggle-cancel") { const it = state.items.find(x => x.id === F.id); patchStatus(it && it.status === "cancelado" ? "agendado" : "cancelado"); }
     else if (a === "delete") deleteItem();
     else if (a === "theme") toggleTheme();
+    else if (a === "install") instalar();
     else if (a === "exemplo") carregaExemplo();
     else if (a === "ped-ok") openSheet({ pedido: t.dataset.id });
     else if (a === "ped-no") resolvePedido(t.dataset.id, "recusado");
@@ -1089,7 +1098,21 @@ body { margin: 0; }
     r.readAsText(f);
   }
 
+  /* ---------- app instalável (PWA) ---------- */
+  let promptInstalar = null;
+  const instalado = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  function mostraInstalar() { $("ub-install").hidden = instalado() || !(promptInstalar || ios); }
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); promptInstalar = e; mostraInstalar(); });
+  window.addEventListener("appinstalled", () => { promptInstalar = null; mostraInstalar(); toast("App instalado"); });
+  async function instalar() {
+    if (promptInstalar) { promptInstalar.prompt(); try { await promptInstalar.userChoice; } catch (e) {} promptInstalar = null; mostraInstalar(); }
+    else if (ios) toast("No iPhone: toque em Compartilhar e depois em “Adicionar à Tela de Início”");
+  }
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+
   function boot() {
+    mostraInstalar();
     let t = "light"; try { t = localStorage.getItem("agenda-tema") === "dark" ? "dark" : "light"; } catch (e) {}
     applyTheme(t);
     readHash(); render(); loadSessao();
