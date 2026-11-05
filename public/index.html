@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#b8466c">
 <title>Agenda de Cílios</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap">
 <style>
 /* Layout: calendário mensal à esquerda, dia com horários ocupados e livres à direita; histórico e serviços em abas. */
@@ -224,6 +225,9 @@ textarea.in { resize: vertical; min-height: 64px; }
   .row2 { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+.userbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: -6px 0 16px; color: var(--muted); font-size: 13px; }
+.userbar .in { width: auto; max-width: 100%; padding: 5px 8px; }
+.conv { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
 [hidden] { display: none !important; }
 body { margin: 0; }
 </style>
@@ -243,6 +247,12 @@ body { margin: 0; }
     </nav>
     <button class="btn primary" data-a="new" id="btn-new">+ Novo horário</button>
   </header>
+  <div class="userbar" id="userbar" hidden>
+    <span id="ub-text"></span>
+    <select class="in" id="ub-agenda" aria-label="Agenda" hidden></select>
+    <button class="btn sm" data-a="share" id="ub-share" hidden>Compartilhar</button>
+    <button class="btn sm" data-a="logout">Sair</button>
+  </div>
   <div id="banner"></div>
   <main id="app"></main>
 </div>
@@ -313,12 +323,22 @@ body { margin: 0; }
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="backdrop" id="login" hidden style="align-items:center;justify-content:center">
-  <div class="card" role="dialog" aria-modal="true" aria-labelledby="login-title" style="width:min(380px,calc(100% - 32px))">
-    <h2 id="login-title" style="font-size:22px;margin-bottom:6px">Agenda</h2>
-    <p class="help">Digite a senha para abrir a agenda.</p>
-    <div class="field"><label for="f-senha">Senha</label><input class="in" type="password" id="f-senha" autocomplete="current-password"></div>
-    <div class="formerr" id="login-msg" role="alert" style="margin:0 0 10px"></div>
-    <button class="btn primary" data-a="login">Entrar</button>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="login-title" style="width:min(380px,calc(100% - 32px));text-align:center">
+    <h2 id="login-title" style="font-size:22px;margin-bottom:6px">Agenda de Cílios</h2>
+    <p class="help">Entre com sua conta Google para abrir a sua agenda.</p>
+    <div id="g-btn" style="display:flex;justify-content:center;min-height:44px"></div>
+    <div class="formerr" id="login-msg" role="alert" style="margin:10px 0 0"></div>
+  </div>
+</div>
+<div class="backdrop" id="share" hidden style="align-items:center;justify-content:center">
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="share-title" style="width:min(460px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto">
+    <div class="sheet-head"><h2 id="share-title">Compartilhar agenda</h2><button class="icon-btn" data-a="share-close" aria-label="Fechar">✕</button></div>
+    <p class="help">Quem você convidar entra com a conta Google desse e-mail e vê e edita esta agenda.</p>
+    <div class="field"><label for="f-conv">E-mail da pessoa</label>
+      <div style="display:flex;gap:8px"><input class="in" id="f-conv" type="email" placeholder="nome@gmail.com" autocomplete="off"><button class="btn primary" data-a="invite">Convidar</button></div>
+    </div>
+    <div class="formerr" id="share-msg" role="alert" style="margin:0 0 8px"></div>
+    <div id="share-list"></div>
   </div>
 </div>
 
@@ -353,7 +373,7 @@ body { margin: 0; }
   const SERV_ORDEM = ["manu", "colo", "design", "henna", "laser"];
 
   const state = {
-    items: [], svcOver: {}, loaded: false, erro: null,
+    items: [], svcOver: {}, loaded: false, erro: null, user: null, agendas: [], agendaId: null, convidados: [],
     tab: "agenda", sel: ymd(new Date()),
     cal: { y: new Date().getFullYear(), m: new Date().getMonth() },
     hist: { y: new Date().getFullYear(), m: new Date().getMonth(), f: "all", q: "" }
@@ -699,7 +719,7 @@ body { margin: 0; }
 
   document.addEventListener("click", e => {
     const t = e.target.closest("[data-a]");
-    if (!t) { if (e.target === $("backdrop")) closeSheet(); return; }
+    if (!t) { if (e.target === $("backdrop")) closeSheet(); if (e.target === $("share")) closeShare(); return; }
     const a = t.dataset.a;
     if (a === "tab") { state.tab = t.dataset.v; location.hash = t.dataset.v; render(); }
     else if (a === "new") openSheet({});
@@ -720,7 +740,11 @@ body { margin: 0; }
     else if (a === "delete") deleteItem();
     else if (a === "export") exportData();
     else if (a === "import") $("imp-file").click();
-    else if (a === "login") doLogin();
+    else if (a === "logout") doLogout();
+    else if (a === "share") openShare();
+    else if (a === "share-close") closeShare();
+    else if (a === "invite") invite();
+    else if (a === "uninvite") uninvite(t.dataset.e);
   });
 
   document.addEventListener("input", e => {
@@ -733,6 +757,7 @@ body { margin: 0; }
 
   document.addEventListener("change", async e => {
     const el = e.target;
+    if (el.id === "ub-agenda") { switchAgenda(el.value); return; }
     if (el.id === "imp-file") { importFile(el); return; }
     if (!el.dataset || !el.dataset.sv) return;
     const id = el.dataset.sv, cur = svcOf(id);
@@ -748,7 +773,8 @@ body { margin: 0; }
 
   document.addEventListener("keydown", e => {
     if (e.key === "Escape" && !$("backdrop").hidden) closeSheet();
-    if (e.key === "Enter" && e.target.id === "f-senha") doLogin();
+    if (e.key === "Escape" && !$("share").hidden) closeShare();
+    if (e.key === "Enter" && e.target.id === "f-conv") invite();
   });
 
   function readHash() {
@@ -757,41 +783,89 @@ body { margin: 0; }
   }
   window.addEventListener("hashchange", () => { readHash(); render(); });
 
-  /* ---------- dados (servidor Cloudflare) ---------- */
-  const SKEY = "agenda-cilios-senha";
-  const getSenha = () => { try { return localStorage.getItem(SKEY) || ""; } catch (e) { return ""; } };
-  const setSenha = v => { try { localStorage.setItem(SKEY, v); } catch (e) {} };
+  /* ---------- conta e dados (Cloudflare) ---------- */
+  const AKEY = "agenda-cilios-ativa";
+  const SEM_AGENDA = ["/api/config", "/api/sessao", "/api/login", "/api/logout"];
 
   async function api(path, opt) {
     opt = opt || {};
+    const base = path.split("?")[0];
+    if (!SEM_AGENDA.includes(base) && state.agendaId) path += (path.includes("?") ? "&" : "?") + "agenda=" + encodeURIComponent(state.agendaId);
     let res;
     try {
       res = await fetch(path, {
         method: opt.method || "GET",
-        headers: Object.assign({ "x-senha": encodeURIComponent(getSenha()) }, opt.body ? { "content-type": "application/json" } : {}),
+        credentials: "same-origin",
+        headers: Object.assign({ "x-agenda": "1" }, opt.body ? { "content-type": "application/json" } : {}),
         body: opt.body ? JSON.stringify(opt.body) : undefined
       });
     } catch (e) { throw new Error("sem conexão"); }
-    if (res.status === 401) { showLogin(getSenha() ? "Senha incorreta." : ""); throw new Error("401"); }
     let data = null;
     try { data = await res.json(); } catch (e) {}
+    if (res.status === 401 && base !== "/api/login") { showLogin(); throw new Error("401"); }
     if (!res.ok) throw new Error((data && data.error) || ("erro " + res.status));
     return data;
+  }
+
+  let gPronto = false;
+  async function initGoogle() {
+    if (gPronto) return;
+    const msg = $("login-msg");
+    try {
+      const cfg = await fetch("/api/config").then(r => r.json());
+      if (!cfg.clientId) { msg.textContent = "O login com Google ainda não foi configurado."; return; }
+      for (let i = 0; i < 50 && !(window.google && google.accounts && google.accounts.id); i++) await new Promise(r => setTimeout(r, 200));
+      if (!(window.google && google.accounts && google.accounts.id)) { msg.textContent = "Não foi possível carregar o login do Google. Verifique a internet."; return; }
+      google.accounts.id.initialize({ client_id: cfg.clientId, callback: onCredential, auto_select: false });
+      google.accounts.id.renderButton($("g-btn"), { theme: "outline", size: "large", locale: "pt-BR", text: "signin_with", shape: "pill" });
+      gPronto = true;
+    } catch (e) { msg.textContent = "Não foi possível abrir o login. Tente de novo."; }
   }
 
   function showLogin(msg) {
     $("login").hidden = false;
     $("login-msg").textContent = msg || "";
-    $("f-senha").value = "";
-    $("f-senha").focus();
+    initGoogle();
   }
   function hideLogin() { $("login").hidden = true; }
-  function doLogin() {
-    const v = $("f-senha").value;
-    if (!v) return;
-    setSenha(v);
+
+  async function onCredential(resp) {
     $("login-msg").textContent = "Entrando…";
-    loadAll();
+    try {
+      await api("/api/login", { method: "POST", body: { credential: resp.credential } });
+      $("login-msg").textContent = "";
+      await loadSessao();
+    } catch (e) { $("login-msg").textContent = "Não foi possível entrar: " + e.message + "."; }
+  }
+
+  function renderUserbar() {
+    const u = state.user, bar = $("userbar");
+    if (!u) { bar.hidden = true; return; }
+    bar.hidden = false;
+    $("ub-text").textContent = u.nome ? u.nome + " · " + u.email : u.email;
+    const sel = $("ub-agenda");
+    sel.hidden = state.agendas.length < 2;
+    sel.innerHTML = state.agendas.map(a => '<option value="' + esc(a.id) + '"' + (a.id === state.agendaId ? " selected" : "") + ">" + esc(a.nome) + "</option>").join("");
+    $("ub-share").hidden = state.agendaId !== u.sub;
+  }
+
+  async function loadSessao() {
+    try {
+      const s = await api("/api/sessao");
+      state.user = s.user; state.agendas = s.agendas;
+      let quer = state.agendaId;
+      try { quer = quer || localStorage.getItem(AKEY); } catch (e) {}
+      state.agendaId = state.agendas.some(a => a.id === quer) ? quer : s.user.sub;
+      hideLogin(); renderUserbar(); state.loaded = false; render();
+      await loadAll();
+    } catch (e) { if (e.message !== "401") { state.erro = e.message; render(); } }
+  }
+
+  function switchAgenda(id) {
+    state.agendaId = id;
+    try { localStorage.setItem(AKEY, id); } catch (e) {}
+    state.items = []; state.svcOver = {}; state.loaded = false; state.erro = null;
+    renderUserbar(); render(); loadAll();
   }
 
   function upsertLocal(item) {
@@ -801,7 +875,7 @@ body { margin: 0; }
 
   let loading = false;
   async function loadAll(quiet) {
-    if (loading) return;
+    if (loading || !state.user) return;
     const ae = document.activeElement;
     if (quiet && ae && ae.id && ae.id.indexOf("sv-") === 0) return;
     loading = true;
@@ -809,10 +883,46 @@ body { margin: 0; }
       const d = await api("/api/dados");
       state.items = d.items || []; state.svcOver = d.svcOver || {};
       state.loaded = true; state.erro = null;
-      hideLogin(); refresh();
+      refresh();
     } catch (e) {
+      if (e.message === "sem acesso") { loading = false; state.agendaId = state.user.sub; await loadSessao(); return; }
       if (e.message !== "401") { state.erro = e.message; render(); }
     } finally { loading = false; }
+  }
+
+  async function doLogout() {
+    try { await api("/api/logout", { method: "POST" }); } catch (e) {}
+    try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (e) {}
+    closeSheet(); closeShare();
+    state.user = null; state.agendas = []; state.items = []; state.svcOver = {}; state.loaded = false; state.agendaId = null; state.erro = null;
+    try { localStorage.removeItem(AKEY); } catch (e) {}
+    renderUserbar(); render(); showLogin();
+  }
+
+  /* ---------- compartilhar ---------- */
+  function closeShare() { $("share").hidden = true; }
+  async function openShare() {
+    $("share").hidden = false; $("share-msg").textContent = ""; $("f-conv").value = "";
+    await refreshConvidados();
+    $("f-conv").focus();
+  }
+  async function refreshConvidados() {
+    try { const d = await api("/api/convidados"); state.convidados = d.emails || []; }
+    catch (e) { if (e.message !== "401") $("share-msg").textContent = "Não foi possível ler a lista."; return; }
+    $("share-list").innerHTML = state.convidados.length
+      ? '<div class="glabel">Com acesso</div>' + state.convidados.map(em => '<div class="conv"><span>' + esc(em) + '</span><button class="btn sm danger" data-a="uninvite" data-e="' + esc(em) + '">Remover</button></div>').join("")
+      : '<p class="help">Ninguém foi convidado ainda.</p>';
+  }
+  async function invite() {
+    const v = $("f-conv").value.trim().toLowerCase(), msg = $("share-msg");
+    msg.textContent = "";
+    if (!v) return;
+    try { await api("/api/convidar", { method: "POST", body: { email: v } }); $("f-conv").value = ""; await refreshConvidados(); toast("Convite salvo"); }
+    catch (e) { if (e.message !== "401") msg.textContent = e.message; }
+  }
+  async function uninvite(email) {
+    try { await api("/api/convidar?email=" + encodeURIComponent(email), { method: "DELETE" }); await refreshConvidados(); }
+    catch (e) { if (e.message !== "401") $("share-msg").textContent = e.message; }
   }
 
   function exportData() {
@@ -841,7 +951,7 @@ body { margin: 0; }
   }
 
   function boot() {
-    readHash(); render(); loadAll();
+    readHash(); render(); loadSessao();
     setInterval(() => { if (!document.hidden) loadAll(true); }, 20000);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) loadAll(true); });
   }
