@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#d3366f">
+<meta name="theme-color" content="#1f5fd6">
 <title>Agenda de Cílios</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" type="image/png" href="/icon-192.png">
@@ -17,15 +17,15 @@
 <style>
 /* Layout: calendário mensal à esquerda, dia com horários ocupados e livres à direita; histórico e serviços em abas. */
 :root {
-  --bg: #fdf7f4;
+  --bg: #f3f7fc;
   --surface: #ffffff;
-  --surface-2: #f6ece8;
-  --ink: #2b1a24;
-  --muted: #7b6670;
-  --line: #ecdcd5;
-  --accent: #d3366f;
+  --surface-2: #e9f0fa;
+  --ink: #14233a;
+  --muted: #5d6f88;
+  --line: #d7e2f0;
+  --accent: #1f5fd6;
   --accent-ink: #ffffff;
-  --accent-soft: #fde4ed;
+  --accent-soft: #dfeafd;
   --free: #11805a;
   --free-soft: #dcf3e8;
   --warn: #b45309;
@@ -33,20 +33,22 @@
   --danger: #c0262d;
   --danger-soft: #fde3e1;
   --c-henna: #b8651b;
-  --c-design: #0d8fa3;
-  --c-manu: #d3366f;
+  --c-design: #0d8f86;
+  --c-manu: #1f5fd6;
   --c-colo: #7c4dd0;
   --c-laser: #64748b;
+  --c-c0: #e0592a; --c-c1: #0891b2; --c-c2: #5f9e0b; --c-c3: #c026d3; --c-c4: #c28a04; --c-c5: #4f46e5;
   color-scheme: light;
   --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
 }
 :root[data-theme="dark"] {
-  --bg: #1b1418; --surface: #271d23; --surface-2: #33262d; --ink: #f8eef2; --muted: #b9a5ae; --line: #46353e;
-  --accent: #f0689a; --accent-ink: #2a0f1b; --accent-soft: #432333;
+  --bg: #0f1722; --surface: #172233; --surface-2: #1f2d42; --ink: #eaf1fb; --muted: #9fb0c8; --line: #2b3d57;
+  --accent: #6aa2ff; --accent-ink: #08162e; --accent-soft: #1c3358;
   --free: #6fd9a8; --free-soft: #1e3a2e; --warn: #f5b062; --warn-soft: #3f2e17;
   --danger: #ff9088; --danger-soft: #442220;
-  --c-henna: #e0a566; --c-design: #55cce0; --c-manu: #f0689a; --c-colo: #bda2f0; --c-laser: #a3adbb;
+  --c-henna: #e0a566; --c-design: #4fd1c5; --c-manu: #6aa2ff; --c-colo: #bda2f0; --c-laser: #a3adbb;
+  --c-c0: #ff8a65; --c-c1: #4dd0e1; --c-c2: #a3d65c; --c-c3: #e879f9; --c-c4: #f0c24b; --c-c5: #8f8cff;
   color-scheme: dark;
 }
 
@@ -136,6 +138,7 @@ button { cursor: pointer; }
 .empty { text-align: center; padding: 18px 8px 4px; color: var(--muted); }
 
 .svc-henna { --svc: var(--c-henna); } .svc-design { --svc: var(--c-design); } .svc-manu { --svc: var(--c-manu); }
+.svc-c0 { --svc: var(--c-c0); } .svc-c1 { --svc: var(--c-c1); } .svc-c2 { --svc: var(--c-c2); } .svc-c3 { --svc: var(--c-c3); } .svc-c4 { --svc: var(--c-c4); } .svc-c5 { --svc: var(--c-c5); }
 .svc-colo { --svc: var(--c-colo); } .svc-laser { --svc: var(--c-laser); } .svc-x { --svc: var(--muted); }
 
 /* Histórico */
@@ -249,6 +252,10 @@ textarea.in { resize: vertical; min-height: 64px; }
   .top .btn.primary { display: none; }
   body { padding-bottom: 96px; }
 }
+.suporte { margin-top: 28px; text-align: center; color: var(--muted); font-size: 13px; }
+.suporte a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.suporte a:hover { text-decoration: underline; }
+.svc-add { display: grid; gap: 4px; }
 [hidden] { display: none !important; }
 body { margin: 0; }
 </style>
@@ -280,6 +287,7 @@ body { margin: 0; }
   </div>
   <div id="banner"></div>
   <main id="app"></main>
+  <footer class="suporte">Precisa de ajuda? Suporte: <a href="https://wa.me/5547991887371" target="_blank" rel="noopener">(47) 99188-7371</a></footer>
 </div>
 <button class="fab" id="fab" data-a="new" aria-label="Novo horário">+</button>
 
@@ -356,6 +364,7 @@ body { margin: 0; }
     <div id="g-btn" style="display:flex;justify-content:center;min-height:44px"></div>
     <button class="btn sm inst-btn" data-a="install" style="margin-top:14px" hidden>📲 Instalar app</button>
     <div class="formerr" id="login-msg" role="alert" style="margin:10px 0 0"></div>
+    <p class="help" style="margin:14px 0 0">Suporte: <a href="https://wa.me/5547991887371" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">(47) 99188-7371</a></p>
   </div>
 </div>
 <div class="backdrop" id="inst" hidden style="align-items:center;justify-content:center;z-index:90">
@@ -410,20 +419,29 @@ body { margin: 0; }
     laser:  { nome: "Laser",                 curto: "Laser",      duracao: 30,  valor: 0,   renda: false }
   };
   const SERV_ORDEM = ["manu", "colo", "design", "henna", "laser"];
+  const CORES = ["c0", "c1", "c2", "c3", "c4", "c5"];
 
   const state = {
-    items: [], svcOver: {}, papel: "dono", pedidos: [], loaded: false, erro: null, user: null, agendas: [], agendaId: null, convidados: [],
+    items: [], svcOver: {}, svcNovo: false, svcDel: null, papel: "dono", pedidos: [], loaded: false, erro: null, user: null, agendas: [], agendaId: null, convidados: [],
     tab: "agenda", sel: ymd(new Date()),
     cal: { y: new Date().getFullYear(), m: new Date().getMonth() },
     hist: { y: new Date().getFullYear(), m: new Date().getMonth(), f: "all", q: "" }
   };
 
   function svcOf(id) {
-    const b = SERV_BASE[id] || { nome: id, curto: id, duracao: 30, valor: 0, renda: true };
     const o = state.svcOver[id] || {};
-    return Object.assign({ id: id }, b, o.duracao != null ? { duracao: o.duracao } : {}, "valor" in o ? { valor: o.valor } : {});
+    const b = SERV_BASE[id] || { nome: o.nome || (id === "ocupado" ? "Agendado" : id), curto: o.nome || (id === "ocupado" ? "Agendado" : id), duracao: 30, valor: 0, renda: o.renda !== 0 };
+    const r = Object.assign({ id: id }, b, o.duracao != null ? { duracao: o.duracao } : {}, "valor" in o ? { valor: o.valor } : {});
+    if (!SERV_BASE[id] && o.nome) { r.nome = o.nome; r.curto = o.nome; }
+    return r;
   }
-  const svcClass = id => SERV_BASE[id] ? "svc-" + id : "svc-x";
+  const svcClass = id => SERV_BASE[id] ? "svc-" + id : (state.svcOver[id] && /^c[0-5]$/.test(state.svcOver[id].cor || "") ? "svc-" + state.svcOver[id].cor : "svc-x");
+  const removido = id => !!(state.svcOver[id] && state.svcOver[id].removido);
+  const custom = () => Object.keys(state.svcOver).filter(id => !SERV_BASE[id]);
+  // serviços disponíveis para marcar (sem os removidos)
+  const catalogo = () => SERV_ORDEM.filter(id => !removido(id)).concat(custom().filter(id => !removido(id)));
+  // todos que aparecem em relatórios (inclui removidos que ainda têm histórico)
+  const todosIds = () => SERV_ORDEM.concat(custom());
 
   /* ---------- regras da agenda ---------- */
   function endMin(i) { return toMin(i.hora) + (+i.duracao || 30); }
@@ -509,7 +527,7 @@ body { margin: 0; }
     const tag = st === "cancelado" ? '<span class="tag">cancelado</span>' : (st === "realizado" ? '<span class="tag done">feito</span>' : "");
     return '<' + (ro ? "div" : "button") + ' class="slot ' + svcClass(i.servico) + (st === "cancelado" ? " cancel" : "") + (ro ? " ro" : "") + '"' + (ro ? "" : ' data-a="edit" data-id="' + esc(i.id) + '"') + '>' +
       '<span class="t">' + i.hora + "<small>até " + fromMin(endMin(i)) + "</small></span>" +
-      '<span><span class="who">' + esc(i.cliente) + '</span><span class="meta"><span class="chip">' + esc(s.curto) + "</span><span>" + fmtDur(+i.duracao || 30) + "</span>" + tag + (i.obs ? "<span>" + esc(i.obs) + "</span>" : "") + "</span></span>" +
+      '<span><span class="who">' + esc(ro ? "Agendado" : i.cliente) + '</span><span class="meta">' + (ro ? "" : '<span class="chip">' + esc(s.curto) + "</span>") + "<span>" + fmtDur(+i.duracao || 30) + "</span>" + (ro ? "" : tag + (i.obs ? "<span>" + esc(i.obs) + "</span>" : "")) + "</span></span>" +
       '<span class="price">' + price + "</span></" + (ro ? "div" : "button") + ">";
   }
 
@@ -582,12 +600,12 @@ body { margin: 0; }
     const key = y + "-" + pad(m + 1);
     const ticket = st.qtd ? st.real / st.qtd : 0;
     const maxSoma = Math.max(1, ...Object.values(st.porSvc).map(b => b.soma));
-    const bars = SERV_ORDEM.filter(id => st.porSvc[id]).map(id => {
+    const bars = todosIds().filter(id => st.porSvc[id]).map(id => {
       const b = st.porSvc[id], s = svcOf(id);
       return '<div class="bar-row ' + svcClass(id) + '"><div class="top2"><span>' + esc(s.curto) + " · " + b.qtd + '</span><span class="num">' + money(b.soma) + '</span></div><div class="bar"><i style="width:' + Math.max(3, (b.soma / maxSoma) * 100) + '%"></i></div></div>';
     }).join("") || '<p class="help">Os procedimentos feitos aparecem aqui.</p>';
     const filt = ['<button class="fchip" data-a="hf" data-f="all" aria-pressed="' + (f === "all") + '">Todos</button>']
-      .concat(SERV_ORDEM.filter(id => SERV_BASE[id].renda).map(id => '<button class="fchip" data-a="hf" data-f="' + id + '" aria-pressed="' + (f === id) + '">' + esc(svcOf(id).curto) + "</button>")).join("");
+      .concat(catalogo().filter(id => svcOf(id).renda).map(id => '<button class="fchip" data-a="hf" data-f="' + id + '" aria-pressed="' + (f === id) + '">' + esc(svcOf(id).curto) + "</button>")).join("");
     return '<div class="hist-head"><h2>' + monthLabel(y, m) + '</h2><button class="icon-btn" data-a="hm" data-n="-1" aria-label="Mês anterior">‹</button><button class="icon-btn" data-a="hm" data-n="1" aria-label="Próximo mês">›</button></div>' +
       '<div class="tiles"><div class="card tile"><div class="lbl">Ganho no mês</div><div class="val ok num">' + money(st.real) + '</div><div class="note">procedimentos já feitos</div></div>' +
       '<div class="card tile"><div class="lbl">A receber</div><div class="val num">' + money(st.prev) + '</div><div class="note">ainda agendados no mês</div></div>' +
@@ -612,15 +630,27 @@ body { margin: 0; }
       '<div class="hrow total"><span></span><span>Total · ' + list.length + '</span><span class="hide-s"></span><span class="hide-s"></span><span class="r">' + money(total) + "</span></div>";
   }
 
+  function servCard(id) {
+    const s = svcOf(id), isC = !SERV_BASE[id];
+    return '<div class="card svc-card ' + svcClass(id) + '"><h3>' + esc(s.nome) + "</h3><p>" + (s.renda ? "Entra no ganho do mês" : "Compromisso sem valor, só ocupa o horário") + "</p>" +
+      (isC ? '<div class="field"><label for="sv-nome-' + id + '">Nome</label><input class="in" type="text" maxlength="40" id="sv-nome-' + id + '" data-sv="' + id + '" data-k="nome" value="' + esc(s.nome) + '"></div>' : "") +
+      '<div class="field"><label for="sv-dur-' + id + '">Duração (min)</label><input class="in" type="number" min="5" step="5" id="sv-dur-' + id + '" data-sv="' + id + '" data-k="duracao" value="' + s.duracao + '"></div>' +
+      (s.renda ? '<div class="field"><label for="sv-val-' + id + '">Valor padrão (R$)</label><input class="in" type="text" inputmode="decimal" id="sv-val-' + id + '" data-sv="' + id + '" data-k="valor" value="' + (s.valor == null ? "" : s.valor) + '"></div>' : "") +
+      '<div class="sheet-foot" style="margin-top:4px"><button class="btn sm danger" data-a="svc-del" data-id="' + id + '">' + (state.svcDel === id ? "Confirmar exclusão" : "Excluir serviço") + "</button></div></div>";
+  }
+
   function servHtml() {
-    return '<p class="help">Tempo e valor padrão de cada procedimento. Ao marcar um horário, a duração e o valor já vêm preenchidos (e podem ser mudados na hora).</p><div class="svc-grid">' +
-      SERV_ORDEM.map(id => {
-        const s = svcOf(id);
-        return '<div class="card svc-card ' + svcClass(id) + '"><h3>' + esc(s.nome) + "</h3><p>" + (s.renda ? "Entra no ganho do mês" : "Compromisso sem valor, só ocupa o horário") + '</p>' +
-          '<div class="field"><label for="sv-dur-' + id + '">Duração (min)</label><input class="in" type="number" min="5" step="5" id="sv-dur-' + id + '" data-sv="' + id + '" data-k="duracao" value="' + s.duracao + '"></div>' +
-          (s.renda ? '<div class="field"><label for="sv-val-' + id + '">Valor padrão (R$)</label><input class="in" type="text" inputmode="decimal" id="sv-val-' + id + '" data-sv="' + id + '" data-k="valor" value="' + (s.valor == null ? "" : s.valor) + '"></div>' : "") +
-          "</div>";
-      }).join("") + "</div>" +
+    const ativos = catalogo();
+    const rem = todosIds().filter(id => removido(id));
+    return '<div class="hist-head"><h2>Serviços</h2><button class="btn primary" data-a="svc-new">+ Adicionar serviço</button></div>' +
+      '<p class="help">Tempo e valor padrão de cada serviço. Ao marcar um horário, a duração e o valor já vêm preenchidos (e podem ser mudados na hora). Excluir um serviço não apaga os horários antigos.</p>' +
+      (state.svcNovo ? '<div class="card svc-add" style="margin-bottom:14px"><h3 style="margin-bottom:8px">Novo serviço</h3><div class="row2"><div class="field"><label for="ns-nome">Nome</label><input class="in" id="ns-nome" maxlength="40" placeholder="Ex.: Lash lifting"></div>' +
+        '<div class="field"><label for="ns-dur">Duração (min)</label><input class="in" id="ns-dur" type="number" min="5" step="5" value="60"></div></div>' +
+        '<div class="row2"><div class="field"><label for="ns-val">Valor padrão (R$)</label><input class="in" id="ns-val" type="text" inputmode="decimal" placeholder="a definir"></div>' +
+        '<div class="field"><label for="ns-renda">Conta no ganho do mês?</label><select class="in" id="ns-renda"><option value="1">Sim, tem valor</option><option value="0">Não, só ocupa o horário</option></select></div></div>' +
+        '<div class="formerr" id="ns-err" role="alert"></div><div class="sheet-foot" style="margin-top:6px"><button class="btn primary" data-a="svc-save">Adicionar</button><button class="btn" data-a="svc-cancel">Cancelar</button></div></div>' : "") +
+      '<div class="svc-grid">' + ativos.map(servCard).join("") + "</div>" +
+      (rem.length ? '<h3 class="sec-title">Serviços excluídos</h3><div class="card">' + rem.map(id => '<div class="conv"><span>' + esc(svcOf(id).nome) + '</span><button class="btn sm" data-a="svc-restore" data-id="' + id + '">Restaurar</button></div>').join("") + "</div>" : "") +
       '<div class="card" style="margin-top:16px"><h3 style="margin-bottom:6px">Backup</h3><p class="help">Os horários ficam guardados no servidor e aparecem em todos os aparelhos. O backup é uma cópia em arquivo. Importar substitui tudo o que está na agenda.</p><div class="sheet-foot" style="margin-top:0"><button class="btn" data-a="export">Baixar backup</button><button class="btn" data-a="import">Importar backup</button><input type="file" id="imp-file" accept="application/json,.json" hidden></div></div>';
   }
 
@@ -643,7 +673,7 @@ body { margin: 0; }
     $("banner").innerHTML = msg ? '<div class="banner" role="status">' + esc(msg) + "</div>" : "";
     const dl = $("clientes");
     const nomes = {};
-    state.items.forEach(i => { if (i.cliente && norm(i.cliente) !== "laser") nomes[norm(i.cliente)] = i.cliente; });
+    if (!verSo()) state.items.forEach(i => { if (i.cliente && norm(i.cliente) !== "laser") nomes[norm(i.cliente)] = i.cliente; });
     dl.innerHTML = Object.values(nomes).sort((a, b) => a.localeCompare(b, "pt-BR")).map(n => '<option value="' + esc(n) + '"></option>').join("");
   }
 
@@ -653,7 +683,7 @@ body { margin: 0; }
   const F = { id: null, modo: "novo", pedido: null, servico: "manu", tDur: false, tVal: false, confirmDel: false, saving: false };
 
   function svcPickHtml() {
-    $("svc-pick").innerHTML = SERV_ORDEM.map(id => '<button type="button" class="' + svcClass(id) + '" data-a="svc" data-s="' + id + '" aria-pressed="' + (F.servico === id) + '">' + esc(svcOf(id).curto) + "</button>").join("");
+    $("svc-pick").innerHTML = catalogo().concat(F.servico && !catalogo().includes(F.servico) && !verSo() ? [F.servico] : []).map(id => '<button type="button" class="' + svcClass(id) + '" data-a="svc" data-s="' + id + '" aria-pressed="' + (F.servico === id) + '">' + esc(svcOf(id).curto) + "</button>").join("");
   }
 
   function applyDefaults() {
@@ -724,7 +754,7 @@ body { margin: 0; }
       const faixa = hora + " – " + fromMin(toMin(hora) + dur);
       if (conf.length) {
         box.className = "status-box busy";
-        box.innerHTML = "Horário ocupado" + conf.map(c => "<small>" + esc(c.cliente) + " (" + esc(svcOf(c.servico).curto) + ") · " + c.hora + " – " + fromMin(endMin(c)) + "</small>").join("") + "<small>Sugestões livres abaixo.</small>";
+        box.innerHTML = "Horário ocupado" + conf.map(c => "<small>" + esc(c.cliente) + (verSo() ? "" : " (" + esc(svcOf(c.servico).curto) + ")") + " · " + c.hora + " – " + fromMin(endMin(c)) + "</small>").join("") + "<small>Sugestões livres abaixo.</small>";
       } else {
         box.className = "status-box free";
         box.innerHTML = "Horário livre<small>" + faixa + " · " + fmtDur(dur) + "</small>";
@@ -852,6 +882,11 @@ body { margin: 0; }
     else if (a === "delete") deleteItem();
     else if (a === "theme") toggleTheme();
     else if (a === "install") instalar();
+    else if (a === "svc-new") { state.svcNovo = true; render(); const n = $("ns-nome"); if (n) n.focus(); }
+    else if (a === "svc-cancel") { state.svcNovo = false; render(); }
+    else if (a === "svc-save") novoServico();
+    else if (a === "svc-del") apagaServico(t.dataset.id);
+    else if (a === "svc-restore") salvaServico(t.dataset.id, { removido: 0 }, "Serviço restaurado");
     else if (a === "inst-close") $("inst").hidden = true;
     else if (a === "exemplo") carregaExemplo();
     else if (a === "ped-ok") openSheet({ pedido: t.dataset.id });
@@ -884,6 +919,40 @@ body { margin: 0; }
     catch (e) { if (e.message !== "401") toast(e.message); }
   }
 
+  async function salvaServico(id, mudanca, msg) {
+    const cur = svcOf(id), o = state.svcOver[id] || {};
+    const corpo = { id: id, nome: cur.nome, duracao: cur.duracao, valor: cur.valor, renda: cur.renda ? 1 : 0, cor: o.cor || "", removido: o.removido ? 1 : 0 };
+    Object.assign(corpo, mudanca);
+    try {
+      const r = await api("/api/servico", { method: "PUT", body: corpo });
+      state.svcOver[id] = { nome: r.nome, duracao: r.duracao, valor: r.valor, renda: r.renda, cor: r.cor, removido: r.removido };
+      if (msg) toast(msg);
+      render();
+    } catch (e) { if (e.message !== "401") toast("Não foi possível salvar"); }
+  }
+  async function apagaServico(id) {
+    if (state.svcDel !== id) { state.svcDel = id; render(); return; }
+    state.svcDel = null;
+    await salvaServico(id, { removido: 1 }, "Serviço excluído");
+  }
+  async function novoServico() {
+    const nome = $("ns-nome").value.trim(), err = $("ns-err");
+    const dur = parseInt($("ns-dur").value, 10);
+    const vt = $("ns-val").value.trim().replace(/^R\$\s*/i, "").replace(/\./g, "").replace(",", ".");
+    const valor = vt === "" ? null : Number(vt);
+    if (!nome) { err.textContent = "Dê um nome ao serviço."; return; }
+    if (!dur || dur < 5) { err.textContent = "Informe a duração em minutos."; return; }
+    if (valor != null && (!isFinite(valor) || valor < 0)) { err.textContent = "Valor inválido."; return; }
+    if (todosIds().some(id => !removido(id) && norm(svcOf(id).nome) === norm(nome))) { err.textContent = "Já existe um serviço com esse nome."; return; }
+    const id = "s" + Date.now().toString(36);
+    const cor = CORES[custom().length % CORES.length];
+    try {
+      const r = await api("/api/servico", { method: "PUT", body: { id: id, nome: nome, duracao: dur, valor: valor, renda: $("ns-renda").value === "1" ? 1 : 0, cor: cor, removido: 0 } });
+      state.svcOver[id] = { nome: r.nome, duracao: r.duracao, valor: r.valor, renda: r.renda, cor: r.cor, removido: 0 };
+      state.svcNovo = false; toast("Serviço adicionado"); render();
+    } catch (e) { if (e.message !== "401") err.textContent = "Não foi possível adicionar: " + e.message + "."; }
+  }
+
   /* tema: claro por padrão */
   function applyTheme(t) {
     document.documentElement.setAttribute("data-theme", t);
@@ -910,14 +979,11 @@ body { margin: 0; }
     if (el.id === "imp-file") { importFile(el); return; }
     if (!el.dataset || !el.dataset.sv) return;
     const id = el.dataset.sv, cur = svcOf(id);
-    let dur = cur.duracao, val = cur.valor;
-    if (el.dataset.k === "duracao") { dur = Math.max(5, parseInt(el.value, 10) || cur.duracao); }
-    else { const v = el.value.trim().replace(/^R\$\s*/i, "").replace(",", "."); val = v === "" ? null : (isFinite(Number(v)) ? Number(v) : cur.valor); }
-    try {
-      await api("/api/servico", { method: "PUT", body: { id: id, nome: cur.nome, duracao: dur, valor: val } });
-      state.svcOver[id] = { nome: cur.nome, duracao: dur, valor: val };
-      toast("Serviço atualizado"); render();
-    } catch (err) { if (err.message !== "401") toast("Não foi possível salvar"); }
+    const mud = {};
+    if (el.dataset.k === "duracao") mud.duracao = Math.max(5, parseInt(el.value, 10) || cur.duracao);
+    else if (el.dataset.k === "nome") mud.nome = el.value.trim() || cur.nome;
+    else { const v = el.value.trim().replace(/^R\$\s*/i, "").replace(",", "."); mud.valor = v === "" ? null : (isFinite(Number(v)) ? Number(v) : cur.valor); }
+    salvaServico(id, mud, "Serviço atualizado");
   });
 
   document.addEventListener("keydown", e => {

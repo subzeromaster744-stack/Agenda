@@ -35,7 +35,7 @@ const DDL = [
   "CREATE TABLE IF NOT EXISTS ag_usuarios (sub TEXT PRIMARY KEY, email TEXT NOT NULL, nome TEXT NOT NULL DEFAULT '', criado INTEGER NOT NULL)",
   "CREATE TABLE IF NOT EXISTS ag_itens (agenda TEXT NOT NULL, id TEXT NOT NULL, cliente TEXT NOT NULL, servico TEXT NOT NULL, dia TEXT NOT NULL, hora TEXT NOT NULL, duracao INTEGER NOT NULL, valor REAL, obs TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'agendado', PRIMARY KEY (agenda, id))",
   "CREATE INDEX IF NOT EXISTS idx_ag_itens_dia ON ag_itens (agenda, dia)",
-  "CREATE TABLE IF NOT EXISTS ag_servicos (agenda TEXT NOT NULL, id TEXT NOT NULL, nome TEXT NOT NULL, duracao INTEGER NOT NULL, valor REAL, PRIMARY KEY (agenda, id))",
+  "CREATE TABLE IF NOT EXISTS ag_servicos (agenda TEXT NOT NULL, id TEXT NOT NULL, nome TEXT NOT NULL, duracao INTEGER NOT NULL, valor REAL, renda INTEGER NOT NULL DEFAULT 1, cor TEXT NOT NULL DEFAULT '', removido INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (agenda, id))",
   "CREATE TABLE IF NOT EXISTS ag_acessos (agenda TEXT NOT NULL, email TEXT NOT NULL, papel TEXT NOT NULL DEFAULT 'editar', PRIMARY KEY (agenda, email))",
   "CREATE TABLE IF NOT EXISTS ag_pedidos (agenda TEXT NOT NULL, id TEXT NOT NULL, de_email TEXT NOT NULL, de_nome TEXT NOT NULL DEFAULT '', cliente TEXT NOT NULL, servico TEXT NOT NULL, dia TEXT NOT NULL, hora TEXT NOT NULL, duracao INTEGER NOT NULL, obs TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'pendente', criado INTEGER NOT NULL, PRIMARY KEY (agenda, id))",
   "CREATE TABLE IF NOT EXISTS ag_meta (k TEXT PRIMARY KEY, v TEXT NOT NULL)"
@@ -56,7 +56,12 @@ function init(env) {
     pronto = (async () => {
       await env.DB.batch(DDL.map(q => env.DB.prepare(q)));
       // bancos criados antes da coluna "papel"
-      try { await env.DB.prepare("ALTER TABLE ag_acessos ADD COLUMN papel TEXT NOT NULL DEFAULT 'editar'").run(); } catch (e) {}
+      for (const q of [
+        "ALTER TABLE ag_acessos ADD COLUMN papel TEXT NOT NULL DEFAULT 'editar'",
+        "ALTER TABLE ag_servicos ADD COLUMN renda INTEGER NOT NULL DEFAULT 1",
+        "ALTER TABLE ag_servicos ADD COLUMN cor TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE ag_servicos ADD COLUMN removido INTEGER NOT NULL DEFAULT 0"
+      ]) { try { await env.DB.prepare(q).run(); } catch (e) {} }
       let r = await env.DB.prepare("SELECT v FROM ag_meta WHERE k = 'sess_key'").first();
       if (!r) {
         await env.DB.prepare("INSERT OR IGNORE INTO ag_meta (k, v) VALUES ('sess_key', ?)").bind(novoSegredo()).run();
@@ -227,16 +232,16 @@ export default {
         const a = await env.DB.prepare(
           "SELECT id, cliente, servico, dia, hora, duracao, valor, obs, status FROM ag_itens WHERE agenda = ? ORDER BY dia, hora"
         ).bind(agenda).all();
-        const s = await env.DB.prepare("SELECT id, nome, duracao, valor FROM ag_servicos WHERE agenda = ?").bind(agenda).all();
+        const s = await env.DB.prepare("SELECT id, nome, duracao, valor, renda, cor, removido FROM ag_servicos WHERE agenda = ?").bind(agenda).all();
         const svcOver = {};
-        s.results.forEach(r => { svcOver[r.id] = { nome: r.nome, duracao: r.duracao, valor: r.valor }; });
+        s.results.forEach(r => { svcOver[r.id] = { nome: r.nome, duracao: r.duracao, valor: r.valor, renda: r.renda ? 1 : 0, cor: r.cor || "", removido: r.removido ? 1 : 0 }; });
         let items = a.results, over = svcOver;
         let pq;
         if (veSo) {
-          // quem só vê não enxerga valores
-          items = items.map(i => Object.assign({}, i, { valor: null }));
+          // quem só vê não enxerga valores, nomes nem procedimentos: só que o horário está ocupado
+          items = items.filter(i => i.status !== "cancelado").map(i => ({ id: i.id, cliente: "Agendado", servico: "ocupado", dia: i.dia, hora: i.hora, duracao: i.duracao, valor: null, obs: "", status: i.status === "concluido" ? "concluido" : "agendado" }));
           over = {};
-          Object.entries(svcOver).forEach(([k, o]) => { over[k] = { nome: o.nome, duracao: o.duracao, valor: null }; });
+          Object.entries(svcOver).forEach(([k, o]) => { over[k] = Object.assign({}, o, { valor: null }); });
           pq = await env.DB.prepare(
             "SELECT id, de_email, de_nome, cliente, servico, dia, hora, duracao, obs, status, criado FROM ag_pedidos WHERE agenda = ? AND de_email = ? ORDER BY criado DESC LIMIT 30"
           ).bind(agenda, user.email).all();
@@ -306,11 +311,14 @@ export default {
         const duracao = Math.round(Number(b && b.duracao));
         if (!b || !/^[a-z0-9_-]{1,20}$/.test(b.id || "") || !(duracao >= 5 && duracao <= 720)) return falha("dados inválidos", 400);
         const valor = valorServico(b.valor);
-        const nome = String(b.nome || b.id).slice(0, 60);
+        const nome = String(b.nome || b.id).trim().slice(0, 40) || b.id;
+        const renda = b.renda === 0 || b.renda === false ? 0 : 1;
+        const cor = /^c[0-5]$/.test(b.cor || "") ? b.cor : "";
+        const removido = b.removido ? 1 : 0;
         await env.DB.prepare(
-          "INSERT INTO ag_servicos (agenda, id, nome, duracao, valor) VALUES (?,?,?,?,?) ON CONFLICT(agenda, id) DO UPDATE SET nome=excluded.nome, duracao=excluded.duracao, valor=excluded.valor"
-        ).bind(agenda, b.id, nome, duracao, valor).run();
-        return json({ id: b.id, nome, duracao, valor });
+          "INSERT INTO ag_servicos (agenda, id, nome, duracao, valor, renda, cor, removido) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(agenda, id) DO UPDATE SET nome=excluded.nome, duracao=excluded.duracao, valor=excluded.valor, renda=excluded.renda, cor=excluded.cor, removido=excluded.removido"
+        ).bind(agenda, b.id, nome, duracao, valor, renda, cor, removido).run();
+        return json({ id: b.id, nome, duracao, valor, renda, cor, removido });
       }
 
       if (p === "/api/importar" && m === "POST") {
@@ -327,8 +335,8 @@ export default {
         Object.entries(b.svcOver || {}).forEach(([id, o]) => {
           const duracao = Math.round(Number(o && o.duracao));
           if (!/^[a-z0-9_-]{1,20}$/.test(id) || !(duracao >= 5 && duracao <= 720)) return;
-          lote.push(env.DB.prepare("INSERT OR REPLACE INTO ag_servicos (agenda, id, nome, duracao, valor) VALUES (?,?,?,?,?)")
-            .bind(agenda, id, String(o.nome || id).slice(0, 60), duracao, valorServico(o.valor)));
+          lote.push(env.DB.prepare("INSERT OR REPLACE INTO ag_servicos (agenda, id, nome, duracao, valor, renda, cor, removido) VALUES (?,?,?,?,?,?,?,?)")
+            .bind(agenda, id, String(o.nome || id).slice(0, 40), duracao, valorServico(o.valor), o.renda === 0 ? 0 : 1, /^c[0-5]$/.test(o.cor || "") ? o.cor : "", o.removido ? 1 : 0));
         });
         await env.DB.batch(lote);
         return json({ ok: true, total: itens.length });
