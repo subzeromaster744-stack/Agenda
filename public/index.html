@@ -267,13 +267,13 @@ body { margin: 0; }
       <button class="tab" role="tab" data-a="tab" data-v="historico" id="tab-historico">💰 Ganhos</button>
       <button class="tab" role="tab" data-a="tab" data-v="servicos" id="tab-servicos">⚙️ Serviços</button>
     </nav>
+    <button class="btn inst-btn" data-a="install" hidden>📲 Instalar app</button>
     <button class="btn primary" data-a="new" id="btn-new">+ Novo horário</button>
   </header>
   <div class="userbar" id="userbar" hidden>
     <span id="ub-text"></span>
     <select class="in" id="ub-agenda" aria-label="Agenda" hidden></select>
     <span class="rolepill" id="ub-role" hidden></span>
-    <button class="btn sm primary" data-a="install" id="ub-install" hidden>📲 Instalar app</button>
     <button class="btn sm" data-a="share" id="ub-share" hidden>👥 Compartilhar</button>
     <button class="btn sm" data-a="theme" id="ub-theme" aria-label="Alternar tema claro e escuro">🌙</button>
     <button class="btn sm" data-a="logout">Sair</button>
@@ -354,7 +354,14 @@ body { margin: 0; }
     <h2 id="login-title" style="font-size:22px;margin-bottom:6px">Agenda de Cílios</h2>
     <p class="help">Entre com sua conta Google para abrir a sua agenda.</p>
     <div id="g-btn" style="display:flex;justify-content:center;min-height:44px"></div>
+    <button class="btn sm inst-btn" data-a="install" style="margin-top:14px" hidden>📲 Instalar app</button>
     <div class="formerr" id="login-msg" role="alert" style="margin:10px 0 0"></div>
+  </div>
+</div>
+<div class="backdrop" id="inst" hidden style="align-items:center;justify-content:center;z-index:90">
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="inst-title" style="width:min(420px,calc(100% - 32px))">
+    <div class="sheet-head"><h2 id="inst-title">Instalar o app</h2><button class="icon-btn" data-a="inst-close" aria-label="Fechar">✕</button></div>
+    <div id="inst-body" class="help" style="font-size:15px;color:var(--ink)"></div>
   </div>
 </div>
 <div class="backdrop" id="share" hidden style="align-items:center;justify-content:center">
@@ -824,7 +831,7 @@ body { margin: 0; }
 
   document.addEventListener("click", e => {
     const t = e.target.closest("[data-a]");
-    if (!t) { if (e.target === $("backdrop")) closeSheet(); if (e.target === $("share")) closeShare(); return; }
+    if (!t) { if (e.target === $("backdrop")) closeSheet(); if (e.target === $("share")) closeShare(); if (e.target === $("inst")) $("inst").hidden = true; return; }
     const a = t.dataset.a;
     if (a === "tab") { state.tab = t.dataset.v; location.hash = t.dataset.v; render(); }
     else if (a === "new") openSheet({});
@@ -845,6 +852,7 @@ body { margin: 0; }
     else if (a === "delete") deleteItem();
     else if (a === "theme") toggleTheme();
     else if (a === "install") instalar();
+    else if (a === "inst-close") $("inst").hidden = true;
     else if (a === "exemplo") carregaExemplo();
     else if (a === "ped-ok") openSheet({ pedido: t.dataset.id });
     else if (a === "ped-no") resolvePedido(t.dataset.id, "recusado");
@@ -1102,12 +1110,20 @@ body { margin: 0; }
   let promptInstalar = null;
   const instalado = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  function mostraInstalar() { $("ub-install").hidden = instalado() || !(promptInstalar || ios); }
+  function mostraInstalar() { document.querySelectorAll(".inst-btn").forEach(b => { b.hidden = instalado(); }); }
   window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); promptInstalar = e; mostraInstalar(); });
   window.addEventListener("appinstalled", () => { promptInstalar = null; mostraInstalar(); toast("App instalado"); });
   async function instalar() {
     if (promptInstalar) { promptInstalar.prompt(); try { await promptInstalar.userChoice; } catch (e) {} promptInstalar = null; mostraInstalar(); }
-    else if (ios) toast("No iPhone: toque em Compartilhar e depois em “Adicionar à Tela de Início”");
+    else {
+      const android = /android/i.test(navigator.userAgent);
+      $("inst-body").innerHTML = ios
+        ? "<p>No <b>Safari</b> do iPhone/iPad:</p><ol><li>Toque no botão <b>Compartilhar</b> (quadrado com seta para cima).</li><li>Escolha <b>Adicionar à Tela de Início</b>.</li><li>Toque em <b>Adicionar</b>.</li></ol><p>Se estiver em outro navegador, abra este endereço no Safari.</p>"
+        : android
+        ? "<p>No <b>Chrome</b> do Android:</p><ol><li>Toque nos <b>três pontinhos</b> no canto de cima.</li><li>Escolha <b>Instalar app</b> (ou <b>Adicionar à tela inicial</b>).</li><li>Confirme.</li></ol>"
+        : "<p>No <b>Chrome</b> ou <b>Edge</b> do computador, clique no ícone de instalar (um monitor com seta) no fim da barra de endereço, ou no menu <b>⋮</b> → <b>Instalar Agenda</b>.</p><p>No celular, abra este endereço no Chrome (Android) ou no Safari (iPhone).</p>";
+      $("inst").hidden = false;
+    }
   }
   if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
