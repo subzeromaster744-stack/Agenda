@@ -1,6 +1,6 @@
-# Agenda de Cílios
+# Agenda de Horários
 
-Agenda de horários para cílios e sobrancelhas: aviso de conflito, horários livres do dia,
+Agenda de horários para qualquer serviço: aviso de conflito, horários livres do dia,
 histórico de procedimentos e ganho mensal. Login com Google, uma agenda por usuário e
 convite de outros e-mails para a mesma agenda (Cloudflare Worker + D1).
 
@@ -17,9 +17,8 @@ convite de outros e-mails para a mesma agenda (Cloudflare Worker + D1).
 
 Não precisa de segredo: o ID do cliente é público. A chave que assina a sessão é criada sozinha no banco.
 
-A primeira conta que entrar recebe os horários iniciais de novembro. Quem não tiver convite só vê a própria agenda.
+Toda conta começa com a agenda vazia e cadastra os próprios serviços (ou usa um modelo pronto). Quem não tiver convite só vê a própria agenda.
 
 ## Permissões e pedidos
 
-- Contas novas começam com a agenda vazia. O dono pode carregar a lista de novembro pelo botão da tela inicial (só funciona com a agenda vazia).
 - Ao compartilhar, cada e-mail recebe uma permissão: **Pode editar** (vê e altera tudo) ou **Só ver e pedir horário** (não vê valores, não edita; envia pedidos que o dono/editor aceita ou recusa na aba Pedidos).

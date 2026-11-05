@@ -4,33 +4,6 @@
 
 import { verificaGoogle, assinaSessao, leSessao, novoSegredo } from "./auth.js";
 
-const SEED = [
-  ["2026-11-03", "10:00", "Letícia", "henna", 30, 60],
-  ["2026-11-03", "17:40", "Gio", "manu", 50, 200],
-  ["2026-11-03", "18:30", "Sabrina", "henna", 30, 60],
-  ["2026-11-03", "19:00", "Estephany", "manu", 60, 225],
-  ["2026-11-04", "10:00", "Júlia", "manu", 60, 100],
-  ["2026-11-04", "18:00", "Cleide", "colo", 120, 200],
-  ["2026-11-05", "18:00", "Dani", "design", 30, 50],
-  ["2026-11-05", "18:30", "Maiandra", "colo", 120, 270],
-  ["2026-11-06", "10:30", "Emily", "manu", 60, 125],
-  ["2026-11-06", "18:30", "Joice", "henna", 30, 60],
-  ["2026-11-06", "19:00", "Filha", "design", 30, 50],
-  ["2026-11-06", "19:30", "Filha", "design", 30, 50],
-  ["2026-11-07", "10:00", "Fernanda", "design", 30, 50],
-  ["2026-11-07", "10:30", "Tifani", "manu", 60, 130],
-  ["2026-11-07", "13:30", "Djeni", "colo", 120, 195],
-  ["2026-11-07", "15:30", "Rosa", "design", 30, 50],
-  ["2026-11-09", "18:30", "Vivi", "henna", 30, null],
-  ["2026-11-10", "17:40", "Gio", "manu", 60, null],
-  ["2026-11-11", "14:00", "Letícia", "design", 30, 50],
-  ["2026-11-13", "10:00", "Vane", "manu", 60, 115],
-  ["2026-11-14", "12:00", "Laser", "laser", 30, 0],
-  ["2026-11-17", "17:40", "Gio", "manu", 60, null],
-  ["2026-11-23", "10:00", "Djeni", "manu", 60, 95],
-  ["2026-11-24", "17:40", "Gio", "manu", 60, null]
-];
-
 const DDL = [
   "CREATE TABLE IF NOT EXISTS ag_usuarios (sub TEXT PRIMARY KEY, email TEXT NOT NULL, nome TEXT NOT NULL DEFAULT '', criado INTEGER NOT NULL)",
   "CREATE TABLE IF NOT EXISTS ag_itens (agenda TEXT NOT NULL, id TEXT NOT NULL, cliente TEXT NOT NULL, servico TEXT NOT NULL, dia TEXT NOT NULL, hora TEXT NOT NULL, duracao INTEGER NOT NULL, valor REAL, obs TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'agendado', PRIMARY KEY (agenda, id))",
@@ -132,17 +105,6 @@ function limpaPedido(o) {
   return i;
 }
 
-async function semeia(env, sub) {
-  const ins = env.DB.prepare(UPSERT);
-  const lote = SEED.map(r =>
-    bindItem(ins, sub, {
-      id: "a-" + r[0].replace(/-/g, "") + "-" + r[1].replace(":", ""),
-      cliente: r[2], servico: r[3], dia: r[0], hora: r[1], duracao: r[4], valor: r[5], obs: "", status: "agendado"
-    })
-  );
-  await env.DB.batch(lote);
-}
-
 function valorServico(v) {
   if (v === "" || v === undefined || v === null) return null;
   v = Number(v);
@@ -232,7 +194,7 @@ export default {
         const a = await env.DB.prepare(
           "SELECT id, cliente, servico, dia, hora, duracao, valor, obs, status FROM ag_itens WHERE agenda = ? ORDER BY dia, hora"
         ).bind(agenda).all();
-        const s = await env.DB.prepare("SELECT id, nome, duracao, valor, renda, cor, removido FROM ag_servicos WHERE agenda = ?").bind(agenda).all();
+        const s = await env.DB.prepare("SELECT id, nome, duracao, valor, renda, cor, removido FROM ag_servicos WHERE agenda = ? ORDER BY rowid").bind(agenda).all();
         const svcOver = {};
         s.results.forEach(r => { svcOver[r.id] = { nome: r.nome, duracao: r.duracao, valor: r.valor, renda: r.renda ? 1 : 0, cor: r.cor || "", removido: r.removido ? 1 : 0 }; });
         let items = a.results, over = svcOver;
@@ -279,15 +241,6 @@ export default {
         if (!status || !/^[A-Za-z0-9_-]{1,64}$/.test((b && b.id) || "")) return falha("dados inválidos", 400);
         await env.DB.prepare("UPDATE ag_pedidos SET status = ? WHERE agenda = ? AND id = ?").bind(status, agenda, b.id).run();
         return json({ ok: true });
-      }
-
-      // Carrega a lista de novembro (só dono, só se a agenda estiver vazia)
-      if (p === "/api/exemplo" && m === "POST") {
-        if (perm.papel !== "dono") return falha("só o dono da agenda pode fazer isso", 403);
-        const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM ag_itens WHERE agenda = ?").bind(agenda).first();
-        if (n.n > 0) return falha("a agenda já tem horários", 400);
-        await semeia(env, agenda);
-        return json({ ok: true, total: SEED.length });
       }
 
       if (["/api/item", "/api/servico", "/api/importar"].includes(p) && m !== "GET" && !podeEditar) return falha(SO_VER, 403);

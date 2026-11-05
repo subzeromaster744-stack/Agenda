@@ -1,7 +1,7 @@
 {
-  "name": "Agenda de Cílios",
+  "name": "Agenda de Horários",
   "short_name": "Agenda",
-  "description": "Agenda de horários, valores e histórico para cílios e sobrancelhas.",
+  "description": "Agenda para marcar horários, ver ganhos e compartilhar com quem precisar.",
   "lang": "pt-BR",
   "start_url": "/?pwa=1",
   "scope": "/",

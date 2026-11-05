@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1f5fd6">
-<title>Agenda de Cílios</title>
+<title>Agenda de Horários</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" type="image/png" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -266,7 +266,7 @@ body { margin: 0; }
   <header class="top">
     <div class="brand">
       <h1>Agenda</h1>
-      <span>Cílios e sobrancelhas</span>
+      <span>Horários, clientes e ganhos</span>
     </div>
     <nav class="tabs" role="tablist" aria-label="Seções">
       <button class="tab" role="tab" data-a="tab" data-v="agenda" id="tab-agenda">📅 Agenda</button>
@@ -300,12 +300,12 @@ body { margin: 0; }
 
     <div class="field">
       <label for="f-cliente">Cliente</label>
-      <input class="in" id="f-cliente" list="clientes" autocomplete="off" placeholder="Nome da cliente">
+      <input class="in" id="f-cliente" list="clientes" autocomplete="off" placeholder="Nome do cliente">
       <datalist id="clientes"></datalist>
     </div>
 
     <div class="field">
-      <label id="lbl-svc">Procedimento</label>
+      <label id="lbl-svc">Serviço</label>
       <div class="svc-pick" id="svc-pick" role="group" aria-labelledby="lbl-svc"></div>
     </div>
 
@@ -342,7 +342,7 @@ body { margin: 0; }
 
     <div class="formerr" id="formerr" role="alert"></div>
 
-    <p class="help" id="req-help" hidden>O pedido vai para a dona da agenda, que confirma ou recusa. Você acompanha a resposta na aba “Pedidos”.</p>
+    <p class="help" id="req-help" hidden>O pedido vai para o responsável pela agenda, que confirma ou recusa. Você acompanha a resposta na aba “Pedidos”.</p>
     <div class="sheet-foot">
       <button class="btn primary" id="btn-save" data-a="save">Salvar</button>
       <button class="btn" data-a="close">Fechar</button>
@@ -359,7 +359,7 @@ body { margin: 0; }
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="backdrop" id="login" hidden style="align-items:center;justify-content:center">
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="login-title" style="width:min(380px,calc(100% - 32px));text-align:center">
-    <h2 id="login-title" style="font-size:22px;margin-bottom:6px">Agenda de Cílios</h2>
+    <h2 id="login-title" style="font-size:22px;margin-bottom:6px">Agenda de Horários</h2>
     <p class="help">Entre com sua conta Google para abrir a sua agenda.</p>
     <div id="g-btn" style="display:flex;justify-content:center;min-height:44px"></div>
     <button class="btn sm inst-btn" data-a="install" style="margin-top:14px" hidden>📲 Instalar app</button>
@@ -410,16 +410,14 @@ body { margin: 0; }
 
   const DIA_INI = 8 * 60, DIA_FIM = 21 * 60;
 
-  /* ---------- serviços (valores padrão; podem ser ajustados na aba Serviços) ---------- */
-  const SERV_BASE = {
-    henna:  { nome: "Henna",                 curto: "Henna",      duracao: 30,  valor: 60,  renda: true },
-    design: { nome: "Design de sobrancelha", curto: "Design",     duracao: 30,  valor: 50,  renda: true },
-    manu:   { nome: "Manutenção de cílios",  curto: "Manutenção", duracao: 60,  valor: 120, renda: true },
-    colo:   { nome: "Colocação de cílios",   curto: "Colocação",  duracao: 120, valor: 200, renda: true },
-    laser:  { nome: "Laser",                 curto: "Laser",      duracao: 30,  valor: 0,   renda: false }
-  };
-  const SERV_ORDEM = ["manu", "colo", "design", "henna", "laser"];
+  /* ---------- serviços: cada agenda cadastra os seus ---------- */
   const CORES = ["c0", "c1", "c2", "c3", "c4", "c5"];
+  const MODELOS = {
+    "Cílios e sobrancelhas": [["Manutenção de cílios", 60, 120, 1], ["Colocação de cílios", 120, 200, 1], ["Design de sobrancelha", 30, 50, 1], ["Henna", 30, 60, 1]],
+    "Cabelo e barba": [["Corte", 45, 50, 1], ["Barba", 30, 35, 1], ["Corte e barba", 75, 80, 1]],
+    "Unhas": [["Manicure", 60, 40, 1], ["Pedicure", 60, 45, 1], ["Alongamento", 120, 120, 1]],
+    "Consultas": [["Consulta", 50, 150, 1], ["Retorno", 30, 80, 1]]
+  };
 
   const state = {
     items: [], svcOver: {}, svcNovo: false, svcDel: null, papel: "dono", pedidos: [], loaded: false, erro: null, user: null, agendas: [], agendaId: null, convidados: [],
@@ -430,18 +428,13 @@ body { margin: 0; }
 
   function svcOf(id) {
     const o = state.svcOver[id] || {};
-    const b = SERV_BASE[id] || { nome: o.nome || (id === "ocupado" ? "Agendado" : id), curto: o.nome || (id === "ocupado" ? "Agendado" : id), duracao: 30, valor: 0, renda: o.renda !== 0 };
-    const r = Object.assign({ id: id }, b, o.duracao != null ? { duracao: o.duracao } : {}, "valor" in o ? { valor: o.valor } : {});
-    if (!SERV_BASE[id] && o.nome) { r.nome = o.nome; r.curto = o.nome; }
-    return r;
+    const nome = o.nome || (id === "ocupado" ? "Agendado" : "Serviço");
+    return { id: id, nome: nome, curto: nome, duracao: o.duracao != null ? o.duracao : 30, valor: "valor" in o ? o.valor : null, renda: o.renda == null ? true : o.renda !== 0 };
   }
-  const svcClass = id => SERV_BASE[id] ? "svc-" + id : (state.svcOver[id] && /^c[0-5]$/.test(state.svcOver[id].cor || "") ? "svc-" + state.svcOver[id].cor : "svc-x");
+  const svcClass = id => (state.svcOver[id] && /^c[0-5]$/.test(state.svcOver[id].cor || "")) ? "svc-" + state.svcOver[id].cor : "svc-x";
   const removido = id => !!(state.svcOver[id] && state.svcOver[id].removido);
-  const custom = () => Object.keys(state.svcOver).filter(id => !SERV_BASE[id]);
-  // serviços disponíveis para marcar (sem os removidos)
-  const catalogo = () => SERV_ORDEM.filter(id => !removido(id)).concat(custom().filter(id => !removido(id)));
-  // todos que aparecem em relatórios (inclui removidos que ainda têm histórico)
-  const todosIds = () => SERV_ORDEM.concat(custom());
+  const todosIds = () => Object.keys(state.svcOver).filter(id => id !== "ocupado");
+  const catalogo = () => todosIds().filter(id => !removido(id));
 
   /* ---------- regras da agenda ---------- */
   function endMin(i) { return toMin(i.hora) + (+i.duracao || 30); }
@@ -550,13 +543,22 @@ body { margin: 0; }
       rows.map(r => r.h).join("") + "</div>" + empty + "</div>";
   }
 
+  function modelosHtml() {
+    return '<div class="acts" style="flex-direction:column;align-items:center"><div class="glabel">Modelos prontos (você pode editar depois)</div><div class="acts">' +
+      Object.keys(MODELOS).map(n => '<button class="btn" data-a="modelo" data-m="' + esc(n) + '">' + esc(n) + "</button>").join("") + "</div></div>";
+  }
+
   function agendaHtml() {
     let top = "";
-    if (state.loaded && !state.items.length) {
+    if (state.loaded && !catalogo().length) {
       top = verSo()
-        ? '<div class="card welcome"><h2>Esta agenda ainda não tem horários</h2><p>Escolha um dia livre e peça um horário. A dona da agenda confirma.</p><div class="acts"><button class="btn primary" data-a="new">Pedir um horário</button></div></div>'
-        : '<div class="card welcome"><h2>Sua agenda está vazia</h2><p>Comece marcando o primeiro horário. Se quiser, carregue a lista de novembro que você já tinha anotada.</p><div class="acts"><button class="btn primary" data-a="new">+ Novo horário</button>' +
-          (state.papel === "dono" ? '<button class="btn" data-a="exemplo">Carregar a lista de novembro</button>' : "") + "</div></div>";
+        ? '<div class="card welcome"><h2>Esta agenda ainda não está pronta</h2><p>O responsável ainda não cadastrou os serviços. Volte mais tarde.</p></div>'
+        : '<div class="card welcome"><h2>Vamos começar</h2><p>Primeiro cadastre os serviços que você faz (nome, tempo e valor). Escolha um modelo pronto ou crie os seus.</p>' + modelosHtml() + '<div class="acts" style="margin-top:12px"><button class="btn" data-a="tab" data-v="servicos">Criar meus serviços</button></div></div>';
+    } else if (state.loaded && !state.items.length) {
+      top = verSo()
+        ? '<div class="card welcome"><h2>Esta agenda ainda não tem horários</h2><p>Escolha um dia livre e peça um horário. O responsável pela agenda confirma.</p><div class="acts"><button class="btn primary" data-a="new">Pedir um horário</button></div></div>'
+        : '<div class="card welcome"><h2>Sua agenda está vazia</h2><p>Comece marcando o primeiro horário.</p><div class="acts"><button class="btn primary" data-a="new">+ Novo horário</button>' +
+          "</div></div>";
     } else if (!verSo() && pendentes().length) {
       const n = pendentes().length;
       top = '<div class="notice"><span>✋ ' + n + (n === 1 ? " pedido de horário aguardando" : " pedidos de horário aguardando") + '</span><button class="btn sm primary" data-a="tab" data-v="pedidos">Ver pedidos</button></div>';
@@ -577,7 +579,7 @@ body { margin: 0; }
         return '<div class="card req ' + svcClass(r.servico) + '"><div class="who">' + esc(r.cliente) + " " + tag + '</div><div class="meta">' + pedidoMeta(r) + (r.obs ? "<span>" + esc(r.obs) + "</span>" : "") + "</div>" +
           '<div class="acts">' + (r.status === "pendente" ? '<button class="btn sm danger" data-a="ped-cancel" data-id="' + esc(r.id) + '">Cancelar pedido</button>' : '<button class="btn sm" data-a="ped-cancel" data-id="' + esc(r.id) + '">Remover da lista</button>') + "</div></div>";
       }).join("") || '<p class="empty">Você ainda não pediu nenhum horário.</p>';
-      return '<div class="hist-head"><h2>Meus pedidos</h2><button class="btn primary" data-a="new">+ Pedir horário</button></div><p class="help">Peça um horário livre. Quando a dona da agenda aceitar, ele aparece marcado no calendário.</p>' + itens;
+      return '<div class="hist-head"><h2>Meus pedidos</h2><button class="btn primary" data-a="new">+ Pedir horário</button></div><p class="help">Peça um horário livre. Quando o responsável pela agenda aceitar, ele aparece marcado no calendário.</p>' + itens;
     }
     const pend = lista.filter(r => r.status === "pendente"), feitos = lista.filter(r => r.status !== "pendente");
     const card = (r, ativo) => {
@@ -603,25 +605,25 @@ body { margin: 0; }
     const bars = todosIds().filter(id => st.porSvc[id]).map(id => {
       const b = st.porSvc[id], s = svcOf(id);
       return '<div class="bar-row ' + svcClass(id) + '"><div class="top2"><span>' + esc(s.curto) + " · " + b.qtd + '</span><span class="num">' + money(b.soma) + '</span></div><div class="bar"><i style="width:' + Math.max(3, (b.soma / maxSoma) * 100) + '%"></i></div></div>';
-    }).join("") || '<p class="help">Os procedimentos feitos aparecem aqui.</p>';
+    }).join("") || '<p class="help">Os atendimentos feitos aparecem aqui.</p>';
     const filt = ['<button class="fchip" data-a="hf" data-f="all" aria-pressed="' + (f === "all") + '">Todos</button>']
       .concat(catalogo().filter(id => svcOf(id).renda).map(id => '<button class="fchip" data-a="hf" data-f="' + id + '" aria-pressed="' + (f === id) + '">' + esc(svcOf(id).curto) + "</button>")).join("");
     return '<div class="hist-head"><h2>' + monthLabel(y, m) + '</h2><button class="icon-btn" data-a="hm" data-n="-1" aria-label="Mês anterior">‹</button><button class="icon-btn" data-a="hm" data-n="1" aria-label="Próximo mês">›</button></div>' +
-      '<div class="tiles"><div class="card tile"><div class="lbl">Ganho no mês</div><div class="val ok num">' + money(st.real) + '</div><div class="note">procedimentos já feitos</div></div>' +
+      '<div class="tiles"><div class="card tile"><div class="lbl">Ganho no mês</div><div class="val ok num">' + money(st.real) + '</div><div class="note">atendimentos já feitos</div></div>' +
       '<div class="card tile"><div class="lbl">A receber</div><div class="val num">' + money(st.prev) + '</div><div class="note">ainda agendados no mês</div></div>' +
-      '<div class="card tile"><div class="lbl">Procedimentos</div><div class="val num">' + st.qtd + '</div><div class="note">' + (st.semValor ? st.semValor + " sem valor definido" : "todos com valor") + "</div></div>" +
-      '<div class="card tile"><div class="lbl">Ticket médio</div><div class="val num">' + money(ticket) + '</div><div class="note">por procedimento</div></div></div>' +
+      '<div class="card tile"><div class="lbl">Atendimentos</div><div class="val num">' + st.qtd + '</div><div class="note">' + (st.semValor ? st.semValor + " sem valor definido" : "todos com valor") + "</div></div>" +
+      '<div class="card tile"><div class="lbl">Ticket médio</div><div class="val num">' + money(ticket) + '</div><div class="note">por atendimento</div></div></div>' +
       '<div class="hist-grid"><div class="card"><div class="filters">' + filt + '<input class="search" id="hist-q" type="search" placeholder="Buscar cliente" value="' + esc(q) + '" aria-label="Buscar cliente"></div><div class="rows" id="hist-rows">' + histRows(key, f, q) + '</div></div>' +
-      '<div class="card"><h3 style="margin-bottom:12px">Por procedimento</h3><div class="bars">' + bars + "</div></div></div>";
+      '<div class="card"><h3 style="margin-bottom:12px">Por serviço</h3><div class="bars">' + bars + "</div></div></div>";
   }
 
   function histRows(key, f, q) {
     const list = state.items.filter(i => i.dia.startsWith(key) && svcOf(i.servico).renda && eff(i) === "realizado" &&
       (f === "all" || i.servico === f) && (!q || norm(i.cliente).includes(norm(q))))
       .sort((a, b) => (b.dia + b.hora).localeCompare(a.dia + a.hora));
-    if (!list.length) return '<p class="empty">Nenhum procedimento feito neste mês' + (f !== "all" || q ? " com esse filtro" : "") + ".</p>";
+    if (!list.length) return '<p class="empty">Nenhum atendimento feito neste mês' + (f !== "all" || q ? " com esse filtro" : "") + ".</p>";
     const total = list.reduce((t, i) => t + (i.valor == null ? 0 : +i.valor), 0);
-    return '<div class="hrow head"><span>Data</span><span>Cliente</span><span class="hide-s">Procedimento</span><span class="r hide-s">Duração</span><span class="r">Valor</span></div>' +
+    return '<div class="hrow head"><span>Data</span><span>Cliente</span><span class="hide-s">Serviço</span><span class="r hide-s">Duração</span><span class="r">Valor</span></div>' +
       list.map(i => {
         const s = svcOf(i.servico), d = parseYmd(i.dia);
         return '<button class="hrow ' + svcClass(i.servico) + '" data-a="edit" data-id="' + esc(i.id) + '"><span class="num">' + pad(d.getDate()) + "/" + pad(d.getMonth() + 1) + " " + i.hora + '</span><span class="nm">' + esc(i.cliente) +
@@ -631,7 +633,7 @@ body { margin: 0; }
   }
 
   function servCard(id) {
-    const s = svcOf(id), isC = !SERV_BASE[id];
+    const s = svcOf(id), isC = true;
     return '<div class="card svc-card ' + svcClass(id) + '"><h3>' + esc(s.nome) + "</h3><p>" + (s.renda ? "Entra no ganho do mês" : "Compromisso sem valor, só ocupa o horário") + "</p>" +
       (isC ? '<div class="field"><label for="sv-nome-' + id + '">Nome</label><input class="in" type="text" maxlength="40" id="sv-nome-' + id + '" data-sv="' + id + '" data-k="nome" value="' + esc(s.nome) + '"></div>' : "") +
       '<div class="field"><label for="sv-dur-' + id + '">Duração (min)</label><input class="in" type="number" min="5" step="5" id="sv-dur-' + id + '" data-sv="' + id + '" data-k="duracao" value="' + s.duracao + '"></div>' +
@@ -649,6 +651,7 @@ body { margin: 0; }
         '<div class="row2"><div class="field"><label for="ns-val">Valor padrão (R$)</label><input class="in" id="ns-val" type="text" inputmode="decimal" placeholder="a definir"></div>' +
         '<div class="field"><label for="ns-renda">Conta no ganho do mês?</label><select class="in" id="ns-renda"><option value="1">Sim, tem valor</option><option value="0">Não, só ocupa o horário</option></select></div></div>' +
         '<div class="formerr" id="ns-err" role="alert"></div><div class="sheet-foot" style="margin-top:6px"><button class="btn primary" data-a="svc-save">Adicionar</button><button class="btn" data-a="svc-cancel">Cancelar</button></div></div>' : "") +
+      (!ativos.length && !state.svcNovo ? '<div class="card welcome">' + "<h2>Nenhum serviço ainda</h2><p>Escolha um modelo ou toque em “Adicionar serviço”.</p>" + modelosHtml() + "</div>" : "") +
       '<div class="svc-grid">' + ativos.map(servCard).join("") + "</div>" +
       (rem.length ? '<h3 class="sec-title">Serviços excluídos</h3><div class="card">' + rem.map(id => '<div class="conv"><span>' + esc(svcOf(id).nome) + '</span><button class="btn sm" data-a="svc-restore" data-id="' + id + '">Restaurar</button></div>').join("") + "</div>" : "") +
       '<div class="card" style="margin-top:16px"><h3 style="margin-bottom:6px">Backup</h3><p class="help">Os horários ficam guardados no servidor e aparecem em todos os aparelhos. O backup é uma cópia em arquivo. Importar substitui tudo o que está na agenda.</p><div class="sheet-foot" style="margin-top:0"><button class="btn" data-a="export">Baixar backup</button><button class="btn" data-a="import">Importar backup</button><input type="file" id="imp-file" accept="application/json,.json" hidden></div></div>';
@@ -673,14 +676,14 @@ body { margin: 0; }
     $("banner").innerHTML = msg ? '<div class="banner" role="status">' + esc(msg) + "</div>" : "";
     const dl = $("clientes");
     const nomes = {};
-    if (!verSo()) state.items.forEach(i => { if (i.cliente && norm(i.cliente) !== "laser") nomes[norm(i.cliente)] = i.cliente; });
+    if (!verSo()) state.items.forEach(i => { if (i.cliente) nomes[norm(i.cliente)] = i.cliente; });
     dl.innerHTML = Object.values(nomes).sort((a, b) => a.localeCompare(b, "pt-BR")).map(n => '<option value="' + esc(n) + '"></option>').join("");
   }
 
   function refresh() { render(); if (!$("backdrop").hidden) updateAvail(); }
 
   /* ---------- folha de edição ---------- */
-  const F = { id: null, modo: "novo", pedido: null, servico: "manu", tDur: false, tVal: false, confirmDel: false, saving: false };
+  const F = { id: null, modo: "novo", pedido: null, servico: "", tDur: false, tVal: false, confirmDel: false, saving: false };
 
   function svcPickHtml() {
     $("svc-pick").innerHTML = catalogo().concat(F.servico && !catalogo().includes(F.servico) && !verSo() ? [F.servico] : []).map(id => '<button type="button" class="' + svcClass(id) + '" data-a="svc" data-s="' + id + '" aria-pressed="' + (F.servico === id) + '">' + esc(svcOf(id).curto) + "</button>").join("");
@@ -699,10 +702,15 @@ body { margin: 0; }
     if (verSo() && opt.id) return;
     const it = opt.id ? state.items.find(x => x.id === opt.id) : null;
     if (opt.id && !it) return;
+    if (!ped && !it && !catalogo().length) {
+      if (verSo()) toast("O responsável ainda não cadastrou os serviços");
+      else { state.tab = "servicos"; location.hash = "servicos"; render(); toast("Cadastre ao menos um serviço para marcar horários"); }
+      return;
+    }
     F.modo = verSo() ? "pedido" : (ped ? "aceitar" : (it ? "editar" : "novo"));
     F.pedido = ped ? ped.id : null;
     F.id = it ? it.id : null; F.confirmDel = false; F.saving = false;
-    F.servico = it ? it.servico : (ped ? ped.servico : (opt.servico || "manu"));
+    F.servico = it ? it.servico : (ped ? ped.servico : (opt.servico || catalogo()[0]));
     F.tDur = !!it; F.tVal = !!it;
     $("sheet-title").textContent = F.modo === "pedido" ? "Pedir horário" : F.modo === "aceitar" ? "Aceitar pedido" : it ? "Editar horário" : "Novo horário";
     $("f-cliente").value = it ? it.cliente : (ped ? ped.cliente : (F.modo === "pedido" && state.user ? (state.user.nome || "") : ""));
@@ -785,12 +793,12 @@ body { margin: 0; }
     if (F.saving) return;
     const err = $("formerr"); err.textContent = "";
     let cliente = $("f-cliente").value.trim();
-    if (!cliente && F.servico === "laser") cliente = "Laser";
+    if (!cliente && !svcOf(F.servico).renda) cliente = svcOf(F.servico).nome;
     const dia = $("f-dia").value, hora = $("f-hora").value;
     const dur = parseInt($("f-dur").value, 10);
     const vtxt = $("f-valor").value.trim().replace(/^R\$\s*/i, "").replace(/\./g, "").replace(",", ".");
     const valor = vtxt === "" ? null : Number(vtxt);
-    if (!cliente) { err.textContent = "Informe o nome da cliente."; $("f-cliente").focus(); return; }
+    if (!cliente) { err.textContent = "Informe o nome do cliente."; $("f-cliente").focus(); return; }
     if (F.modo === "pedido") {
       if (!dia) { err.textContent = "Escolha a data."; return; }
       if (!hora) { err.textContent = "Escolha o horário."; $("f-hora").focus(); return; }
@@ -888,7 +896,7 @@ body { margin: 0; }
     else if (a === "svc-del") apagaServico(t.dataset.id);
     else if (a === "svc-restore") salvaServico(t.dataset.id, { removido: 0 }, "Serviço restaurado");
     else if (a === "inst-close") $("inst").hidden = true;
-    else if (a === "exemplo") carregaExemplo();
+    else if (a === "modelo") aplicaModelo(t.dataset.m);
     else if (a === "ped-ok") openSheet({ pedido: t.dataset.id });
     else if (a === "ped-no") resolvePedido(t.dataset.id, "recusado");
     else if (a === "ped-cancel") apagaPedido(t.dataset.id);
@@ -914,11 +922,19 @@ body { margin: 0; }
       state.pedidos = state.pedidos.filter(x => x.id !== id); render();
     } catch (e) { if (e.message !== "401") toast("Não foi possível remover"); }
   }
-  async function carregaExemplo() {
-    try { await api("/api/exemplo", { method: "POST" }); await loadAll(); toast("Lista de novembro carregada"); }
-    catch (e) { if (e.message !== "401") toast(e.message); }
+  async function aplicaModelo(nome) {
+    const lista = MODELOS[nome]; if (!lista) return;
+    try {
+      let n = Object.keys(state.svcOver).length;
+      for (let k = 0; k < lista.length; k++) {
+        const [nm, dur, val, renda] = lista[k];
+        const id = "s" + Date.now().toString(36) + k, cor = CORES[n++ % CORES.length];
+        const r = await api("/api/servico", { method: "PUT", body: { id: id, nome: nm, duracao: dur, valor: val, renda: renda, cor: cor, removido: 0 } });
+        state.svcOver[id] = { nome: r.nome, duracao: r.duracao, valor: r.valor, renda: r.renda, cor: r.cor, removido: 0 };
+      }
+      toast("Serviços adicionados"); render();
+    } catch (e) { if (e.message !== "401") toast("Não foi possível adicionar"); }
   }
-
   async function salvaServico(id, mudanca, msg) {
     const cur = svcOf(id), o = state.svcOver[id] || {};
     const corpo = { id: id, nome: cur.nome, duracao: cur.duracao, valor: cur.valor, renda: cur.renda ? 1 : 0, cor: o.cor || "", removido: o.removido ? 1 : 0 };
@@ -945,7 +961,7 @@ body { margin: 0; }
     if (valor != null && (!isFinite(valor) || valor < 0)) { err.textContent = "Valor inválido."; return; }
     if (todosIds().some(id => !removido(id) && norm(svcOf(id).nome) === norm(nome))) { err.textContent = "Já existe um serviço com esse nome."; return; }
     const id = "s" + Date.now().toString(36);
-    const cor = CORES[custom().length % CORES.length];
+    const cor = CORES[Object.keys(state.svcOver).length % CORES.length];
     try {
       const r = await api("/api/servico", { method: "PUT", body: { id: id, nome: nome, duracao: dur, valor: valor, renda: $("ns-renda").value === "1" ? 1 : 0, cor: cor, removido: 0 } });
       state.svcOver[id] = { nome: r.nome, duracao: r.duracao, valor: r.valor, renda: r.renda, cor: r.cor, removido: 0 };
@@ -999,7 +1015,7 @@ body { margin: 0; }
   window.addEventListener("hashchange", () => { readHash(); render(); });
 
   /* ---------- conta e dados (Cloudflare) ---------- */
-  const AKEY = "agenda-cilios-ativa";
+  const AKEY = "agenda-ativa";
   const SEM_AGENDA = ["/api/config", "/api/sessao", "/api/login", "/api/logout"];
 
   async function api(path, opt) {
