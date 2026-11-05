@@ -90,7 +90,7 @@ button { cursor: pointer; }
 .banner { padding: 10px 14px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); margin-bottom: 14px; font-weight: 500; }
 
 /* Agenda */
-.agenda { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; align-items: start; }
+.agenda { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; min-width: 0; }
 .side { display: grid; gap: 16px; min-width: 0; }
 .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -247,6 +247,33 @@ textarea.in { resize: vertical; min-height: 64px; }
 .conv .acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .slot.ro { cursor: default; }
 .fab { display: none; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; min-width: 0; }
+.stat .lbl { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.stat .val { font-family: var(--font-display); font-size: 24px; font-weight: 700; line-height: 1.2; margin-top: 2px; }
+.stat .val.ok { color: var(--free); }
+.stat .note { color: var(--muted); font-size: 12px; }
+.stat.hero { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.stat.hero .lbl, .stat.hero .note { color: color-mix(in srgb, var(--accent-ink) 82%, transparent); }
+.week { display: grid; grid-template-columns: 34px repeat(7, minmax(0, 1fr)) 34px; gap: 4px; align-items: center; margin-bottom: 16px; }
+.wk { border: 1px solid transparent; background: var(--surface-2); border-radius: 12px; padding: 7px 0 6px; display: grid; gap: 1px; justify-items: center; font-variant-numeric: tabular-nums; }
+.wk:hover { border-color: var(--line); }
+.wk .dw { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); }
+.wk .n { font-size: 17px; font-weight: 700; line-height: 1.2; }
+.wk .c { font-size: 10px; height: 13px; color: var(--muted); font-weight: 600; }
+.wk.today { border-color: var(--accent); }
+.wk.sel { background: var(--accent); color: var(--accent-ink); }
+.wk.sel .dw, .wk.sel .c { color: color-mix(in srgb, var(--accent-ink) 85%, transparent); }
+.wk.fora { opacity: .55; }
+.tip { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 12px 14px; margin-bottom: 14px; border-radius: 12px; background: var(--accent-soft); font-weight: 600; }
+.mes-btn { display: none; }
+@media (max-width: 820px) {
+  .cal-card { display: none; }
+  .agenda.mes-aberto .cal-card { display: block; }
+  .mes-btn { display: inline-flex; }
+  .week { grid-template-columns: 30px repeat(7, minmax(0, 1fr)) 30px; gap: 3px; }
+  .wk .n { font-size: 15px; }
+}
 .home h2.hi { font-size: 26px; margin-bottom: 4px; }
 .home .sub { color: var(--muted); margin: 0 0 18px; }
 .home h3.sec { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 22px 0 10px; font-family: var(--font-body); }
@@ -443,7 +470,7 @@ body { margin: 0; }
   };
 
   const state = {
-    items: [], svcOver: {}, tela: "agenda", svcNovo: false, svcDel: null, svcPurge: null, papel: "dono", pedidos: [], loaded: false, erro: null, user: null, agendas: [], agendaId: null, convidados: [],
+    items: [], svcOver: {}, tela: "agenda", mes: false, svcNovo: false, svcDel: null, svcPurge: null, papel: "dono", pedidos: [], loaded: false, erro: null, user: null, agendas: [], agendaId: null, convidados: [],
     tab: "agenda", sel: ymd(new Date()),
     cal: { y: new Date().getFullYear(), m: new Date().getMonth() },
     hist: { y: new Date().getFullYear(), m: new Date().getMonth(), f: "all", q: "" }
@@ -530,10 +557,35 @@ body { margin: 0; }
       const cls = "cal-cell" + (dia === today ? " today" : "") + (dia === state.sel ? " sel" : "");
       cells += '<button class="' + cls + '" data-a="pick" data-d="' + dia + '" aria-label="' + d + " de " + monthLabel(y, m) + ", " + its.length + ' horários"' + (dia === state.sel ? ' aria-current="date"' : "") + ">" + d + '<span class="dots">' + dots + "</span></button>";
     }
-    const st = monthStats(y, m);
-    return '<div class="card"><div class="cal-head"><button class="icon-btn" data-a="cal" data-n="-1" aria-label="Mês anterior">‹</button><h2>' + monthLabel(y, m) +
-      '</h2><button class="icon-btn" data-a="cal" data-n="1" aria-label="Próximo mês">›</button></div><div class="cal-grid">' + cells + "</div></div>" +
-      (verSo() ? "" : '<div class="card mini"><div><div class="lbl">Ganho no mês</div><div class="val ok num">' + money(st.real) + '</div></div><div><div class="lbl">A receber</div><div class="val num">' + money(st.prev) + "</div></div></div>");
+    return '<div class="card cal-card"><div class="cal-head"><button class="icon-btn" data-a="cal" data-n="-1" aria-label="Mês anterior">‹</button><h2>' + monthLabel(y, m) +
+      '</h2><button class="icon-btn" data-a="cal" data-n="1" aria-label="Próximo mês">›</button></div><div class="cal-grid">' + cells + "</div></div>";
+  }
+
+  function statsHtml() {
+    const hojeY = ymd(new Date());
+    const hoje = activeOfDay(hojeY).filter(i => eff(i) !== "realizado");
+    const agora = new Date(); const min = agora.getHours() * 60 + agora.getMinutes();
+    const prox = activeOfDay(hojeY).find(i => toMin(i.hora) >= min);
+    const d7 = new Date(); d7.setDate(d7.getDate() + 6);
+    const n7 = state.items.filter(i => i.status !== "cancelado" && i.dia >= hojeY && i.dia <= ymd(d7)).length;
+    const hero = '<div class="stat hero"><div class="lbl">Hoje</div><div class="val num">' + activeOfDay(hojeY).length + (activeOfDay(hojeY).length === 1 ? " horário" : " horários") + '</div><div class="note">' + (prox ? "próximo às " + prox.hora : (activeOfDay(hojeY).length ? "nada mais hoje" : "dia livre")) + "</div></div>";
+    if (verSo()) return '<div class="stats">' + hero + '<div class="stat"><div class="lbl">Próximos 7 dias</div><div class="val num">' + n7 + '</div><div class="note">horários ocupados</div></div></div>';
+    const st = monthStats(state.cal.y, state.cal.m);
+    return '<div class="stats">' + hero + '<div class="stat"><div class="lbl">Ganho em ' + monthLabel(state.cal.y, state.cal.m).split(" ")[0].toLowerCase() + '</div><div class="val ok num">' + money(st.real) + '</div><div class="note">atendimentos já feitos</div></div>' +
+      '<div class="stat"><div class="lbl">A receber</div><div class="val num">' + money(st.prev) + '</div><div class="note">ainda agendados no mês</div></div>' +
+      '<div class="stat"><div class="lbl">Próximos 7 dias</div><div class="val num">' + n7 + '</div><div class="note">horários marcados</div></div></div>';
+  }
+
+  function weekHtml() {
+    const sel = parseYmd(state.sel), ini = new Date(sel); ini.setDate(sel.getDate() - sel.getDay());
+    const hoje = ymd(new Date());
+    let b = '<button class="icon-btn" data-a="day" data-n="-7" aria-label="Semana anterior">‹</button>';
+    for (let k = 0; k < 7; k++) {
+      const d = new Date(ini); d.setDate(ini.getDate() + k);
+      const dia = ymd(d), n = activeOfDay(dia).length;
+      b += '<button class="wk' + (dia === state.sel ? " sel" : "") + (dia === hoje ? " today" : "") + (d.getMonth() !== sel.getMonth() ? " fora" : "") + '" data-a="pick" data-d="' + dia + '" aria-label="' + d.getDate() + " de " + monthLabel(d.getFullYear(), d.getMonth()) + ", " + n + ' horários"><span class="dw">' + ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"][d.getDay()] + '</span><span class="n">' + d.getDate() + '</span><span class="c">' + (n ? n + (n === 1 ? " hor." : " hor.") : "") + "</span></button>";
+    }
+    return '<div class="week">' + b + '<button class="icon-btn" data-a="day" data-n="7" aria-label="Próxima semana">›</button></div>';
   }
 
   function slotHtml(i) {
@@ -561,8 +613,8 @@ body { margin: 0; }
     gapsOfDay(dia).filter(g => g[1] - g[0] >= 30).forEach(g => rows.push({ s: g[0], h: gapHtml(g) }));
     rows.sort((a, b) => a.s - b.s);
     const sub = act.length ? act.length + (act.length === 1 ? " horário" : " horários") + (verSo() ? "" : " · " + money(soma)) : "Nenhum horário marcado";
-    const empty = act.length === 0 ? '<p class="empty">Dia livre. ' + (verSo() ? "Toque em “Pedir este horário”." : "Toque em “Marcar aqui” ou em “Novo horário”.") + "</p>" : "";
-    return '<div class="card"><div class="day-head"><h2>' + dayLabel(dia) + '<span class="sub num">' + sub + '</span></h2><div class="day-nav"><button class="icon-btn" data-a="day" data-n="-1" aria-label="Dia anterior">‹</button><button class="btn sm" data-a="today">Hoje</button><button class="icon-btn" data-a="day" data-n="1" aria-label="Próximo dia">›</button></div></div><div class="timeline">' +
+    const empty = act.length === 0 ? '<p class="empty">🗓️ Dia livre. ' + (verSo() ? "Toque em “Pedir este horário”." : "Toque em “Marcar aqui” ou em “Novo horário”.") + "</p>" : "";
+    return '<div class="card">' + weekHtml() + '<div class="day-head"><h2>' + dayLabel(dia) + '<span class="sub num">' + sub + '</span></h2><div class="day-nav"><button class="icon-btn" data-a="day" data-n="-1" aria-label="Dia anterior">‹</button><button class="btn sm mes-btn" data-a="mes" aria-label="Mostrar ou esconder o mês inteiro">📆 Mês</button><button class="btn sm" data-a="today">Hoje</button><button class="icon-btn" data-a="day" data-n="1" aria-label="Próximo dia">›</button></div></div><div class="timeline">' +
       rows.map(r => r.h).join("") + "</div>" + empty + "</div>";
   }
 
@@ -579,14 +631,13 @@ body { margin: 0; }
         : '<div class="card welcome"><h2>Vamos começar</h2><p>Primeiro cadastre os serviços que você faz (nome, tempo e valor). Escolha um modelo pronto ou crie os seus.</p>' + modelosHtml() + '<div class="acts" style="margin-top:12px"><button class="btn" data-a="tab" data-v="servicos">Criar meus serviços</button></div></div>';
     } else if (state.loaded && !state.items.length) {
       top = verSo()
-        ? '<div class="card welcome"><h2>Esta agenda ainda não tem horários</h2><p>Escolha um dia livre e peça um horário. O responsável pela agenda confirma.</p><div class="acts"><button class="btn primary" data-a="new">Pedir um horário</button></div></div>'
-        : '<div class="card welcome"><h2>Sua agenda está vazia</h2><p>Comece marcando o primeiro horário.</p><div class="acts"><button class="btn primary" data-a="new">+ Novo horário</button>' +
-          "</div></div>";
+        ? '<div class="tip"><span>Esta agenda ainda não tem horários. Escolha um dia livre e peça um horário.</span><button class="btn sm primary" data-a="new">Pedir um horário</button></div>'
+        : '<div class="tip"><span>👋 Sua agenda está vazia. Comece marcando o primeiro horário.</span><button class="btn sm primary" data-a="new">+ Novo horário</button></div>';
     } else if (!verSo() && pendentes().length) {
       const n = pendentes().length;
       top = '<div class="notice"><span>✋ ' + n + (n === 1 ? " pedido de horário aguardando" : " pedidos de horário aguardando") + '</span><button class="btn sm primary" data-a="tab" data-v="pedidos">Ver pedidos</button></div>';
     }
-    return top + '<div class="agenda"><div class="side">' + calHtml() + "</div><div>" + dayHtml() + "</div></div>";
+    return top + statsHtml() + '<div class="agenda' + (state.mes ? " mes-aberto" : "") + '"><div>' + dayHtml() + '</div><div class="side">' + calHtml() + "</div></div>";
   }
 
   function homeHtml() {
@@ -916,7 +967,7 @@ body { margin: 0; }
     else if (a === "save") saveForm();
     else if (a === "edit") openSheet({ id: t.dataset.id });
     else if (a === "book") openSheet({ hora: t.dataset.h });
-    else if (a === "pick") { state.sel = t.dataset.d; render(); }
+    else if (a === "pick") { state.sel = t.dataset.d; const pd = parseYmd(state.sel); state.cal = { y: pd.getFullYear(), m: pd.getMonth() }; render(); }
     else if (a === "cal") { const d = new Date(state.cal.y, state.cal.m + (+t.dataset.n), 1); state.cal = { y: d.getFullYear(), m: d.getMonth() }; render(); }
     else if (a === "day") { shiftDay(+t.dataset.n); render(); }
     else if (a === "today") { const d = new Date(); state.sel = ymd(d); state.cal = { y: d.getFullYear(), m: d.getMonth() }; render(); }
@@ -933,6 +984,7 @@ body { margin: 0; }
     else if (a === "svc-cancel") { state.svcNovo = false; render(); }
     else if (a === "svc-save") novoServico();
     else if (a === "svc-del") apagaServico(t.dataset.id);
+    else if (a === "mes") { state.mes = !state.mes; render(); }
     else if (a === "svc-purge") purgeServico(t.dataset.id);
     else if (a === "ags") openAgs();
     else if (a === "ags-close") closeAgs();
