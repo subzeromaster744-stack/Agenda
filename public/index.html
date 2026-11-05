@@ -290,6 +290,13 @@ textarea.in { resize: vertical; min-height: 64px; }
   body { padding-bottom: 96px; }
 }
 .suporte { margin-top: 28px; text-align: center; color: var(--muted); font-size: 13px; }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 600; font-size: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.ajuda details { border: 1px solid var(--line); border-radius: 12px; padding: 0 14px; margin-bottom: 10px; background: var(--surface); }
+.ajuda summary { cursor: pointer; font-weight: 700; padding: 12px 0; font-family: var(--font-display); font-size: 17px; }
+.ajuda details[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+.ajuda ol, .ajuda ul { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 8px; }
+.ajuda li b { color: var(--ink); }
+.ajuda .dica { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
 .suporte a { color: var(--accent); font-weight: 600; text-decoration: none; }
 .suporte a:hover { text-decoration: underline; }
 .svc-add { display: grid; gap: 4px; }
@@ -326,7 +333,7 @@ body { margin: 0; }
   </div>
   <div id="banner"></div>
   <main id="app"></main>
-  <footer class="suporte">Precisa de ajuda? Suporte: <a href="https://wa.me/5547991887371" target="_blank" rel="noopener">(47) 99188-7371</a></footer>
+  <footer class="suporte"><button class="linkbtn" data-a="ajuda">Como usar</button> · Precisa de ajuda? Suporte: <a href="https://wa.me/5547991887371" target="_blank" rel="noopener">(47) 99188-7371</a></footer>
 </div>
 <button class="fab" id="fab" data-a="new" aria-label="Novo horário">+</button>
 
@@ -410,6 +417,34 @@ body { margin: 0; }
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="inst-title" style="width:min(420px,calc(100% - 32px))">
     <div class="sheet-head"><h2 id="inst-title">Instalar o app</h2><button class="icon-btn" data-a="inst-close" aria-label="Fechar">✕</button></div>
     <div id="inst-body" class="help" style="font-size:15px;color:var(--ink)"></div>
+  </div>
+</div>
+<div class="backdrop" id="ajuda" hidden style="align-items:center;justify-content:center">
+  <div class="card ajuda" role="dialog" aria-modal="true" aria-labelledby="ajuda-title" style="width:min(560px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto">
+    <div class="sheet-head"><h2 id="ajuda-title">Como usar</h2><button class="icon-btn" data-a="ajuda-close" aria-label="Fechar">✕</button></div>
+    <details id="aj-usa">
+      <summary>Para quem usa a agenda (dono ou editor)</summary>
+      <ol>
+        <li><b>Cadastre seus serviços.</b> Na aba <b>Serviços</b>, escolha um modelo pronto ou toque em <b>+ Adicionar serviço</b> e informe nome, duração e valor. Esses dados já vêm preenchidos na hora de marcar.</li>
+        <li><b>Marque um horário.</b> Toque em <b>+ Novo horário</b> ou em <b>Marcar aqui</b> num espaço livre. Escolha cliente, serviço, data e hora. Se o horário estiver ocupado, o app avisa e mostra os horários livres do dia (dá para salvar mesmo assim).</li>
+        <li><b>Mude de dia.</b> Use a faixa da semana, as setas ou o calendário do mês. Toque num horário para editar, marcar como feito, cancelar ou excluir.</li>
+        <li><b>Veja seus ganhos.</b> A aba <b>Ganhos</b> mostra o que você ganhou no mês (atendimentos feitos), o que ainda vai receber e o total por serviço.</li>
+        <li><b>Tenha várias agendas.</b> Em <b>🗂️ Agendas</b>, crie uma para cada tipo de atendimento (Consultas, Barbearia, Unhas...). Troque de agenda pelo seletor no topo ou por <b>🏠 Início</b>.</li>
+        <li><b>Compartilhe.</b> Em <b>👥 Compartilhar</b>, digite o e-mail Google da pessoa e escolha a permissão: <b>Pode editar</b> ou <b>Só ver e pedir horário</b>. Você troca ou remove depois.</li>
+        <li><b>Responda pedidos.</b> Quando alguém pedir um horário, aparece um número na aba <b>Pedidos</b>. Toque em <b>Aceitar e marcar</b> para conferir e colocar na agenda, ou em <b>Recusar</b>.</li>
+      </ol>
+    </details>
+    <details id="aj-ve">
+      <summary>Para quem só vê a agenda</summary>
+      <ol>
+        <li><b>Entre com o e-mail convidado.</b> Use a conta Google do e-mail que recebeu o convite. A agenda aparece em <b>Compartilhadas comigo</b>.</li>
+        <li><b>Veja o que está livre.</b> Horários ocupados aparecem só como <b>Agendado</b>, sem nome, serviço ou valor. Os espaços verdes estão livres.</li>
+        <li><b>Peça um horário.</b> Toque em <b>Pedir este horário</b> (ou em <b>+ Pedir horário</b>), preencha seu nome, o serviço, a data e a hora, e toque em <b>Enviar pedido</b>.</li>
+        <li><b>Acompanhe.</b> Em <b>Meus pedidos</b> você vê se está <b>aguardando</b>, <b>aceito</b> ou <b>recusado</b>. Dá para cancelar um pedido que ainda não foi respondido.</li>
+        <li>Quando o pedido for aceito, o horário passa a aparecer como <b>Agendado</b>.</li>
+      </ol>
+    </details>
+    <p class="dica">Dicas: o botão 🌙 troca entre tema claro e escuro, e <b>Instalar app</b> coloca a agenda na tela do aparelho. Dúvidas? Suporte: <a href="https://wa.me/5547991887371" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">(47) 99188-7371</a>.</p>
   </div>
 </div>
 <div class="backdrop" id="ags" hidden style="align-items:center;justify-content:center">
@@ -959,7 +994,7 @@ body { margin: 0; }
 
   document.addEventListener("click", e => {
     const t = e.target.closest("[data-a]");
-    if (!t) { if (e.target === $("backdrop")) closeSheet(); if (e.target === $("share")) closeShare(); if (e.target === $("inst")) $("inst").hidden = true; if (e.target === $("ags")) closeAgs(); return; }
+    if (!t) { if (e.target === $("backdrop")) closeSheet(); if (e.target === $("share")) closeShare(); if (e.target === $("inst")) $("inst").hidden = true; if (e.target === $("ags")) closeAgs(); if (e.target === $("ajuda")) $("ajuda").hidden = true; return; }
     const a = t.dataset.a;
     if (a === "tab") { state.tab = t.dataset.v; location.hash = t.dataset.v; render(); }
     else if (a === "new") openSheet({});
@@ -984,6 +1019,8 @@ body { margin: 0; }
     else if (a === "svc-cancel") { state.svcNovo = false; render(); }
     else if (a === "svc-save") novoServico();
     else if (a === "svc-del") apagaServico(t.dataset.id);
+    else if (a === "ajuda") { $("aj-usa").open = !verSo(); $("aj-ve").open = verSo(); $("ajuda").hidden = false; }
+    else if (a === "ajuda-close") $("ajuda").hidden = true;
     else if (a === "mes") { state.mes = !state.mes; render(); }
     else if (a === "svc-purge") purgeServico(t.dataset.id);
     else if (a === "ags") openAgs();
@@ -1148,6 +1185,7 @@ body { margin: 0; }
     if (e.key === "Escape" && !$("backdrop").hidden) closeSheet();
     if (e.key === "Escape" && !$("share").hidden) closeShare();
     if (e.key === "Escape" && !$("ags").hidden) closeAgs();
+    if (e.key === "Escape" && !$("ajuda").hidden) $("ajuda").hidden = true;
     if (e.key === "Enter" && e.target.id === "f-agnome") criaAgenda();
     if (e.key === "Enter" && e.target.id === "f-conv") invite();
   });
