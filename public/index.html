@@ -3,59 +3,49 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#b8466c">
+<meta name="theme-color" content="#d3366f">
 <title>Agenda de Cílios</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap">
 <style>
 /* Layout: calendário mensal à esquerda, dia com horários ocupados e livres à direita; histórico e serviços em abas. */
 :root {
-  --bg: #f5f3f6;
+  --bg: #fdf7f4;
   --surface: #ffffff;
-  --surface-2: #efecf2;
-  --ink: #241c2b;
-  --muted: #6b6276;
-  --line: #e0dae6;
-  --accent: #b8466c;
+  --surface-2: #f6ece8;
+  --ink: #2b1a24;
+  --muted: #7b6670;
+  --line: #ecdcd5;
+  --accent: #d3366f;
   --accent-ink: #ffffff;
-  --accent-soft: #f6e1e9;
-  --free: #2b7556;
-  --free-soft: #dff0e8;
-  --warn: #a8500a;
-  --warn-soft: #fbe9d6;
-  --danger: #b3261e;
-  --danger-soft: #fbe1de;
-  --c-henna: #9a5b1f;
-  --c-design: #1f7a8c;
-  --c-manu: #b8466c;
-  --c-colo: #6a4c93;
-  --c-laser: #5b6472;
+  --accent-soft: #fde4ed;
+  --free: #11805a;
+  --free-soft: #dcf3e8;
+  --warn: #b45309;
+  --warn-soft: #fef0d4;
+  --danger: #c0262d;
+  --danger-soft: #fde3e1;
+  --c-henna: #b8651b;
+  --c-design: #0d8fa3;
+  --c-manu: #d3366f;
+  --c-colo: #7c4dd0;
+  --c-laser: #64748b;
   color-scheme: light;
   --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #16121a; --surface: #1f1925; --surface-2: #2a2231; --ink: #f1ecf5; --muted: #a79db3; --line: #3a3043;
-    --accent: #e0709a; --accent-ink: #1a0f15; --accent-soft: #3a2230;
-    --free: #6fcf9f; --free-soft: #1c3328; --warn: #f0a35e; --warn-soft: #3a2a16;
-    --danger: #ff8a80; --danger-soft: #3d1f1d;
-    --c-henna: #d9a066; --c-design: #5cc0d3; --c-manu: #e0709a; --c-colo: #b79be0; --c-laser: #9aa4b2;
-    color-scheme: dark;
-  }
-}
 :root[data-theme="dark"] {
-  --bg: #16121a; --surface: #1f1925; --surface-2: #2a2231; --ink: #f1ecf5; --muted: #a79db3; --line: #3a3043;
-  --accent: #e0709a; --accent-ink: #1a0f15; --accent-soft: #3a2230;
-  --free: #6fcf9f; --free-soft: #1c3328; --warn: #f0a35e; --warn-soft: #3a2a16;
-  --danger: #ff8a80; --danger-soft: #3d1f1d;
-  --c-henna: #d9a066; --c-design: #5cc0d3; --c-manu: #e0709a; --c-colo: #b79be0; --c-laser: #9aa4b2;
+  --bg: #1b1418; --surface: #271d23; --surface-2: #33262d; --ink: #f8eef2; --muted: #b9a5ae; --line: #46353e;
+  --accent: #f0689a; --accent-ink: #2a0f1b; --accent-soft: #432333;
+  --free: #6fd9a8; --free-soft: #1e3a2e; --warn: #f5b062; --warn-soft: #3f2e17;
+  --danger: #ff9088; --danger-soft: #442220;
+  --c-henna: #e0a566; --c-design: #55cce0; --c-manu: #f0689a; --c-colo: #bda2f0; --c-laser: #a3adbb;
   color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
 body {
-  background: var(--bg);
+  background: radial-gradient(1100px 380px at 50% -140px, var(--accent-soft), transparent 70%) no-repeat, var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 15px;
@@ -74,14 +64,14 @@ button { cursor: pointer; }
 /* Cabeçalho */
 .top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-bottom: 18px; }
 .brand { display: flex; flex-direction: column; min-width: 0; }
-.brand h1 { font-size: 26px; font-weight: 700; }
+.brand h1 { font-size: 28px; font-weight: 700; color: var(--accent); }
 .brand span { color: var(--muted); font-size: 13px; }
 .tabs { display: flex; gap: 4px; margin-left: auto; background: var(--surface-2); padding: 4px; border-radius: 10px; }
 .tab { border: 0; background: transparent; padding: 8px 14px; border-radius: 7px; font-weight: 600; color: var(--muted); }
 .tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
 .btn { border: 1px solid var(--line); background: var(--surface); padding: 9px 14px; border-radius: 9px; font-weight: 600; }
 .btn:hover { background: var(--surface-2); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary { box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent); background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .btn.primary:hover { filter: brightness(1.06); }
 .btn.warn { background: var(--warn); border-color: var(--warn); color: var(--surface); }
 .btn.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
@@ -228,6 +218,30 @@ textarea.in { resize: vertical; min-height: 64px; }
 .userbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: -6px 0 16px; color: var(--muted); font-size: 13px; }
 .userbar .in { width: auto; max-width: 100%; padding: 5px 8px; }
 .conv { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.tab .badge { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 6px; border-radius: 99px; background: var(--accent); color: var(--accent-ink); font-size: 11px; line-height: 18px; text-align: center; }
+.welcome { text-align: center; padding: 26px 16px; margin-bottom: 16px; background: linear-gradient(135deg, var(--accent-soft), var(--surface)); }
+.welcome h2 { font-size: 22px; margin-bottom: 6px; }
+.welcome p { margin: 0 auto 16px; color: var(--muted); max-width: 46ch; }
+.welcome .acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 12px 16px; margin-bottom: 14px; border-radius: 12px; background: var(--accent-soft); color: var(--ink); font-weight: 600; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); }
+.req { display: grid; gap: 8px; margin-bottom: 10px; border-left: 4px solid var(--svc, var(--accent)); }
+.req .who { font-weight: 700; }
+.req .meta { color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.req .acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.req .alert { color: var(--warn); background: var(--warn-soft); border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: 600; }
+.tag.ok { background: var(--free-soft); color: var(--free); }
+.tag.bad { background: var(--danger-soft); color: var(--danger); }
+.rolepill { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+.sec-title { font-size: 15px; margin: 18px 0 8px; color: var(--muted); font-family: var(--font-body); text-transform: uppercase; letter-spacing: .04em; }
+.conv .in { width: auto; padding: 5px 8px; }
+.conv .acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.slot.ro { cursor: default; }
+.fab { display: none; }
+@media (max-width: 820px) {
+  .fab { display: block; position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 40; width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); font-size: 30px; line-height: 1; box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 45%, transparent); }
+  .top .btn.primary { display: none; }
+  body { padding-bottom: 96px; }
+}
 [hidden] { display: none !important; }
 body { margin: 0; }
 </style>
@@ -241,21 +255,25 @@ body { margin: 0; }
       <span>Cílios e sobrancelhas</span>
     </div>
     <nav class="tabs" role="tablist" aria-label="Seções">
-      <button class="tab" role="tab" data-a="tab" data-v="agenda" id="tab-agenda">Agenda</button>
-      <button class="tab" role="tab" data-a="tab" data-v="historico" id="tab-historico">Histórico</button>
-      <button class="tab" role="tab" data-a="tab" data-v="servicos" id="tab-servicos">Serviços</button>
+      <button class="tab" role="tab" data-a="tab" data-v="agenda" id="tab-agenda">📅 Agenda</button>
+      <button class="tab" role="tab" data-a="tab" data-v="pedidos" id="tab-pedidos">✋ Pedidos</button>
+      <button class="tab" role="tab" data-a="tab" data-v="historico" id="tab-historico">💰 Ganhos</button>
+      <button class="tab" role="tab" data-a="tab" data-v="servicos" id="tab-servicos">⚙️ Serviços</button>
     </nav>
     <button class="btn primary" data-a="new" id="btn-new">+ Novo horário</button>
   </header>
   <div class="userbar" id="userbar" hidden>
     <span id="ub-text"></span>
     <select class="in" id="ub-agenda" aria-label="Agenda" hidden></select>
-    <button class="btn sm" data-a="share" id="ub-share" hidden>Compartilhar</button>
+    <span class="rolepill" id="ub-role" hidden></span>
+    <button class="btn sm" data-a="share" id="ub-share" hidden>👥 Compartilhar</button>
+    <button class="btn sm" data-a="theme" id="ub-theme" aria-label="Alternar tema claro e escuro">🌙</button>
     <button class="btn sm" data-a="logout">Sair</button>
   </div>
   <div id="banner"></div>
   <main id="app"></main>
 </div>
+<button class="fab" id="fab" data-a="new" aria-label="Novo horário">+</button>
 
 <div class="backdrop" id="backdrop" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
@@ -288,7 +306,7 @@ body { margin: 0; }
 
     <div id="status-box" class="status-box idle">Escolha o horário para ver se está livre.</div>
 
-    <div class="row2">
+    <div class="row2" id="row-dv">
       <div class="field">
         <label for="f-dur">Duração estimada (min)</label>
         <input class="in" type="number" id="f-dur" min="5" step="5" inputmode="numeric">
@@ -308,6 +326,7 @@ body { margin: 0; }
 
     <div class="formerr" id="formerr" role="alert"></div>
 
+    <p class="help" id="req-help" hidden>O pedido vai para a dona da agenda, que confirma ou recusa. Você acompanha a resposta na aba “Pedidos”.</p>
     <div class="sheet-foot">
       <button class="btn primary" id="btn-save" data-a="save">Salvar</button>
       <button class="btn" data-a="close">Fechar</button>
@@ -333,9 +352,12 @@ body { margin: 0; }
 <div class="backdrop" id="share" hidden style="align-items:center;justify-content:center">
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="share-title" style="width:min(460px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto">
     <div class="sheet-head"><h2 id="share-title">Compartilhar agenda</h2><button class="icon-btn" data-a="share-close" aria-label="Fechar">✕</button></div>
-    <p class="help">Quem você convidar entra com a conta Google desse e-mail e vê e edita esta agenda.</p>
+    <p class="help">A pessoa entra com a conta Google desse e-mail. Escolha o que ela pode fazer:<br><b>Pode editar</b>: vê e altera a agenda. <b>Só ver</b>: vê os horários (sem valores) e pode pedir um horário, que você aceita ou recusa.</p>
     <div class="field"><label for="f-conv">E-mail da pessoa</label>
-      <div style="display:flex;gap:8px"><input class="in" id="f-conv" type="email" placeholder="nome@gmail.com" autocomplete="off"><button class="btn primary" data-a="invite">Convidar</button></div>
+      <input class="in" id="f-conv" type="email" placeholder="nome@gmail.com" autocomplete="off">
+    </div>
+    <div class="field"><label for="f-papel">Permissão</label>
+      <div style="display:flex;gap:8px"><select class="in" id="f-papel"><option value="ver">Só ver e pedir horário</option><option value="editar">Pode editar</option></select><button class="btn primary" data-a="invite">Convidar</button></div>
     </div>
     <div class="formerr" id="share-msg" role="alert" style="margin:0 0 8px"></div>
     <div id="share-list"></div>
@@ -359,6 +381,8 @@ body { margin: 0; }
   const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
   const fmtDur = m => m < 60 ? m + " min" : Math.floor(m / 60) + "h" + (m % 60 ? pad(m % 60) : "");
   const $ = id => document.getElementById(id);
+  const verSo = () => state.papel === "ver";
+  const pendentes = () => state.pedidos.filter(r => r.status === "pendente");
 
   const DIA_INI = 8 * 60, DIA_FIM = 21 * 60;
 
@@ -373,7 +397,7 @@ body { margin: 0; }
   const SERV_ORDEM = ["manu", "colo", "design", "henna", "laser"];
 
   const state = {
-    items: [], svcOver: {}, loaded: false, erro: null, user: null, agendas: [], agendaId: null, convidados: [],
+    items: [], svcOver: {}, papel: "dono", pedidos: [], loaded: false, erro: null, user: null, agendas: [], agendaId: null, convidados: [],
     tab: "agenda", sel: ymd(new Date()),
     cal: { y: new Date().getFullYear(), m: new Date().getMonth() },
     hist: { y: new Date().getFullYear(), m: new Date().getMonth(), f: "all", q: "" }
@@ -460,21 +484,22 @@ body { margin: 0; }
     const st = monthStats(y, m);
     return '<div class="card"><div class="cal-head"><button class="icon-btn" data-a="cal" data-n="-1" aria-label="Mês anterior">‹</button><h2>' + monthLabel(y, m) +
       '</h2><button class="icon-btn" data-a="cal" data-n="1" aria-label="Próximo mês">›</button></div><div class="cal-grid">' + cells + "</div></div>" +
-      '<div class="card mini"><div><div class="lbl">Ganho no mês</div><div class="val ok num">' + money(st.real) + '</div></div><div><div class="lbl">A receber</div><div class="val num">' + money(st.prev) + "</div></div></div>";
+      (verSo() ? "" : '<div class="card mini"><div><div class="lbl">Ganho no mês</div><div class="val ok num">' + money(st.real) + '</div></div><div><div class="lbl">A receber</div><div class="val num">' + money(st.prev) + "</div></div></div>");
   }
 
   function slotHtml(i) {
     const s = svcOf(i.servico), st = eff(i);
-    const price = !s.renda ? "—" : (i.valor == null ? '<span class="tag warn">sem valor</span>' : money(+i.valor));
+    const ro = verSo();
+    const price = ro ? "" : (!s.renda ? "—" : (i.valor == null ? '<span class="tag warn">sem valor</span>' : money(+i.valor)));
     const tag = st === "cancelado" ? '<span class="tag">cancelado</span>' : (st === "realizado" ? '<span class="tag done">feito</span>' : "");
-    return '<button class="slot ' + svcClass(i.servico) + (st === "cancelado" ? " cancel" : "") + '" data-a="edit" data-id="' + esc(i.id) + '">' +
+    return '<' + (ro ? "div" : "button") + ' class="slot ' + svcClass(i.servico) + (st === "cancelado" ? " cancel" : "") + (ro ? " ro" : "") + '"' + (ro ? "" : ' data-a="edit" data-id="' + esc(i.id) + '"') + '>' +
       '<span class="t">' + i.hora + "<small>até " + fromMin(endMin(i)) + "</small></span>" +
       '<span><span class="who">' + esc(i.cliente) + '</span><span class="meta"><span class="chip">' + esc(s.curto) + "</span><span>" + fmtDur(+i.duracao || 30) + "</span>" + tag + (i.obs ? "<span>" + esc(i.obs) + "</span>" : "") + "</span></span>" +
-      '<span class="price">' + price + "</span></button>";
+      '<span class="price">' + price + "</span></" + (ro ? "div" : "button") + ">";
   }
 
   function gapHtml(g) {
-    return '<div class="gap"><span class="when">Livre · ' + fromMin(g[0]) + " – " + fromMin(g[1]) + '<span class="len">' + fmtDur(g[1] - g[0]) + '</span></span><button class="btn sm" data-a="book" data-h="' + fromMin(g[0]) + '">Marcar aqui</button></div>';
+    return '<div class="gap"><span class="when">Livre · ' + fromMin(g[0]) + " – " + fromMin(g[1]) + '<span class="len">' + fmtDur(g[1] - g[0]) + '</span></span><button class="btn sm" data-a="book" data-h="' + fromMin(g[0]) + '">' + (verSo() ? "Pedir este horário" : "Marcar aqui") + "</button></div>";
   }
 
   function dayHtml() {
@@ -486,14 +511,54 @@ body { margin: 0; }
     all.forEach(i => rows.push({ s: toMin(i.hora), h: slotHtml(i) }));
     gapsOfDay(dia).filter(g => g[1] - g[0] >= 30).forEach(g => rows.push({ s: g[0], h: gapHtml(g) }));
     rows.sort((a, b) => a.s - b.s);
-    const sub = act.length ? act.length + (act.length === 1 ? " horário" : " horários") + " · " + money(soma) : "Nenhum horário marcado";
-    const empty = act.length === 0 ? '<p class="empty">Dia livre. Toque em “Marcar aqui” ou em “Novo horário”.</p>' : "";
+    const sub = act.length ? act.length + (act.length === 1 ? " horário" : " horários") + (verSo() ? "" : " · " + money(soma)) : "Nenhum horário marcado";
+    const empty = act.length === 0 ? '<p class="empty">Dia livre. ' + (verSo() ? "Toque em “Pedir este horário”." : "Toque em “Marcar aqui” ou em “Novo horário”.") + "</p>" : "";
     return '<div class="card"><div class="day-head"><h2>' + dayLabel(dia) + '<span class="sub num">' + sub + '</span></h2><div class="day-nav"><button class="icon-btn" data-a="day" data-n="-1" aria-label="Dia anterior">‹</button><button class="btn sm" data-a="today">Hoje</button><button class="icon-btn" data-a="day" data-n="1" aria-label="Próximo dia">›</button></div></div><div class="timeline">' +
       rows.map(r => r.h).join("") + "</div>" + empty + "</div>";
   }
 
   function agendaHtml() {
-    return '<div class="agenda"><div class="side">' + calHtml() + "</div><div>" + dayHtml() + "</div></div>";
+    let top = "";
+    if (state.loaded && !state.items.length) {
+      top = verSo()
+        ? '<div class="card welcome"><h2>Esta agenda ainda não tem horários</h2><p>Escolha um dia livre e peça um horário. A dona da agenda confirma.</p><div class="acts"><button class="btn primary" data-a="new">Pedir um horário</button></div></div>'
+        : '<div class="card welcome"><h2>Sua agenda está vazia</h2><p>Comece marcando o primeiro horário. Se quiser, carregue a lista de novembro que você já tinha anotada.</p><div class="acts"><button class="btn primary" data-a="new">+ Novo horário</button>' +
+          (state.papel === "dono" ? '<button class="btn" data-a="exemplo">Carregar a lista de novembro</button>' : "") + "</div></div>";
+    } else if (!verSo() && pendentes().length) {
+      const n = pendentes().length;
+      top = '<div class="notice"><span>✋ ' + n + (n === 1 ? " pedido de horário aguardando" : " pedidos de horário aguardando") + '</span><button class="btn sm primary" data-a="tab" data-v="pedidos">Ver pedidos</button></div>';
+    }
+    return top + '<div class="agenda"><div class="side">' + calHtml() + "</div><div>" + dayHtml() + "</div></div>";
+  }
+
+  function pedidoMeta(r) {
+    const s = svcOf(r.servico), d = parseYmd(r.dia);
+    return '<span class="chip">' + esc(s.curto) + "</span><span>" + cap(d.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short" })) + " · " + r.hora + "–" + fromMin(toMin(r.hora) + (+r.duracao || s.duracao)) + "</span>";
+  }
+
+  function pedidosHtml() {
+    const lista = state.pedidos;
+    if (verSo()) {
+      const itens = lista.map(r => {
+        const tag = r.status === "pendente" ? '<span class="tag warn">aguardando resposta</span>' : r.status === "aceito" ? '<span class="tag ok">aceito</span>' : '<span class="tag bad">recusado</span>';
+        return '<div class="card req ' + svcClass(r.servico) + '"><div class="who">' + esc(r.cliente) + " " + tag + '</div><div class="meta">' + pedidoMeta(r) + (r.obs ? "<span>" + esc(r.obs) + "</span>" : "") + "</div>" +
+          '<div class="acts">' + (r.status === "pendente" ? '<button class="btn sm danger" data-a="ped-cancel" data-id="' + esc(r.id) + '">Cancelar pedido</button>' : '<button class="btn sm" data-a="ped-cancel" data-id="' + esc(r.id) + '">Remover da lista</button>') + "</div></div>";
+      }).join("") || '<p class="empty">Você ainda não pediu nenhum horário.</p>';
+      return '<div class="hist-head"><h2>Meus pedidos</h2><button class="btn primary" data-a="new">+ Pedir horário</button></div><p class="help">Peça um horário livre. Quando a dona da agenda aceitar, ele aparece marcado no calendário.</p>' + itens;
+    }
+    const pend = lista.filter(r => r.status === "pendente"), feitos = lista.filter(r => r.status !== "pendente");
+    const card = (r, ativo) => {
+      const dur = +r.duracao || svcOf(r.servico).duracao;
+      const conf = ativo ? conflictsFor(r.dia, r.hora, dur) : [];
+      const tag = r.status === "aceito" ? '<span class="tag ok">aceito</span>' : r.status === "recusado" ? '<span class="tag bad">recusado</span>' : "";
+      return '<div class="card req ' + svcClass(r.servico) + '"><div class="who">' + esc(r.cliente) + " " + tag + '</div><div class="meta">' + pedidoMeta(r) + "<span>pedido por " + esc(r.de_nome || r.de_email) + (r.de_nome ? " (" + esc(r.de_email) + ")" : "") + "</span></div>" +
+        (r.obs ? '<div class="meta">“' + esc(r.obs) + "”</div>" : "") +
+        (conf.length ? '<div class="alert">Esse horário já está ocupado por ' + conf.map(c => esc(c.cliente) + " às " + c.hora).join(", ") + ". Ao aceitar, você escolhe outro horário.</div>" : "") +
+        '<div class="acts">' + (ativo ? '<button class="btn sm primary" data-a="ped-ok" data-id="' + esc(r.id) + '">Aceitar e marcar</button><button class="btn sm danger" data-a="ped-no" data-id="' + esc(r.id) + '">Recusar</button>' : '<button class="btn sm" data-a="ped-cancel" data-id="' + esc(r.id) + '">Remover da lista</button>') + "</div></div>";
+    };
+    return '<div class="hist-head"><h2>Pedidos de horário</h2></div><p class="help">Quem tem acesso “só ver” pode pedir um horário. Toque em “Aceitar e marcar” para conferir os dados e colocar na agenda.</p>' +
+      (pend.length ? pend.map(r => card(r, true)).join("") : '<p class="empty">Nenhum pedido aguardando.</p>') +
+      (feitos.length ? '<h3 class="sec-title">Respondidos</h3>' + feitos.slice(0, 15).map(r => card(r, false)).join("") : "");
   }
 
   function histHtml() {
@@ -547,8 +612,14 @@ body { margin: 0; }
   function render() {
     const ae = document.activeElement;
     const keep = ae && ae.id && $("app").contains(ae) ? { id: ae.id, s: ae.selectionStart, e: ae.selectionEnd } : null;
-    ["agenda", "historico", "servicos"].forEach(t => $("tab-" + t).setAttribute("aria-selected", String(state.tab === t)));
-    $("app").innerHTML = state.tab === "agenda" ? agendaHtml() : state.tab === "historico" ? histHtml() : servHtml();
+    if (verSo() && (state.tab === "historico" || state.tab === "servicos")) state.tab = "agenda";
+    ["agenda", "pedidos", "historico", "servicos"].forEach(t => $("tab-" + t).setAttribute("aria-selected", String(state.tab === t)));
+    $("tab-historico").hidden = verSo(); $("tab-servicos").hidden = verSo();
+    const np = pendentes().length;
+    $("tab-pedidos").innerHTML = "✋ " + (verSo() ? "Meus pedidos" : "Pedidos") + (np && !verSo() ? '<span class="badge">' + np + "</span>" : "");
+    $("btn-new").textContent = verSo() ? "+ Pedir horário" : "+ Novo horário";
+    $("fab").setAttribute("aria-label", verSo() ? "Pedir horário" : "Novo horário");
+    $("app").innerHTML = state.tab === "agenda" ? agendaHtml() : state.tab === "pedidos" ? pedidosHtml() : state.tab === "historico" ? histHtml() : servHtml();
     if (keep) {
       const el = $(keep.id);
       if (el) { el.focus(); try { el.setSelectionRange(keep.s, keep.e); } catch (e) {} }
@@ -564,7 +635,7 @@ body { margin: 0; }
   function refresh() { render(); if (!$("backdrop").hidden) updateAvail(); }
 
   /* ---------- folha de edição ---------- */
-  const F = { id: null, servico: "manu", tDur: false, tVal: false, confirmDel: false, saving: false };
+  const F = { id: null, modo: "novo", pedido: null, servico: "manu", tDur: false, tVal: false, confirmDel: false, saving: false };
 
   function svcPickHtml() {
     $("svc-pick").innerHTML = SERV_ORDEM.map(id => '<button type="button" class="' + svcClass(id) + '" data-a="svc" data-s="' + id + '" aria-pressed="' + (F.servico === id) + '">' + esc(svcOf(id).curto) + "</button>").join("");
@@ -578,20 +649,28 @@ body { margin: 0; }
 
   function openSheet(opt) {
     opt = opt || {};
+    const ped = opt.pedido ? state.pedidos.find(x => x.id === opt.pedido) : null;
+    if (opt.pedido && !ped) return;
+    if (verSo() && opt.id) return;
     const it = opt.id ? state.items.find(x => x.id === opt.id) : null;
     if (opt.id && !it) return;
+    F.modo = verSo() ? "pedido" : (ped ? "aceitar" : (it ? "editar" : "novo"));
+    F.pedido = ped ? ped.id : null;
     F.id = it ? it.id : null; F.confirmDel = false; F.saving = false;
-    F.servico = it ? it.servico : (opt.servico || "manu");
+    F.servico = it ? it.servico : (ped ? ped.servico : (opt.servico || "manu"));
     F.tDur = !!it; F.tVal = !!it;
-    $("sheet-title").textContent = it ? "Editar horário" : "Novo horário";
-    $("f-cliente").value = it ? it.cliente : "";
-    $("f-dia").value = it ? it.dia : state.sel;
-    $("f-hora").value = it ? it.hora : (opt.hora || "");
+    $("sheet-title").textContent = F.modo === "pedido" ? "Pedir horário" : F.modo === "aceitar" ? "Aceitar pedido" : it ? "Editar horário" : "Novo horário";
+    $("f-cliente").value = it ? it.cliente : (ped ? ped.cliente : (F.modo === "pedido" && state.user ? (state.user.nome || "") : ""));
+    $("f-dia").value = it ? it.dia : (ped ? ped.dia : state.sel);
+    $("f-hora").value = it ? it.hora : (ped ? ped.hora : (opt.hora || ""));
     $("f-dur").value = it ? it.duracao : "";
     $("f-valor").value = it ? (it.valor == null ? "" : it.valor) : "";
-    $("f-obs").value = it ? (it.obs || "") : "";
+    $("f-obs").value = it ? (it.obs || "") : (ped ? (ped.obs || "") : "");
     $("formerr").textContent = "";
     $("edit-actions").hidden = !it;
+    $("row-dv").hidden = F.modo === "pedido";
+    $("req-help").hidden = F.modo !== "pedido";
+    $("btn-save").dataset.base = F.modo === "pedido" ? "Enviar pedido" : "Salvar";
     svcPickHtml();
     if (!it) applyDefaults();
     syncEditButtons();
@@ -621,7 +700,7 @@ body { margin: 0; }
     const saveBtn = $("btn-save");
     if (!dia) {
       box.className = "status-box idle"; box.textContent = "Escolha a data.";
-      av.hidden = true; saveBtn.textContent = "Salvar"; saveBtn.className = "btn primary"; return;
+      av.hidden = true; saveBtn.textContent = saveBtn.dataset.base || "Salvar"; saveBtn.className = "btn primary"; return;
     }
     av.hidden = false;
     let conf = [];
@@ -638,7 +717,8 @@ body { margin: 0; }
     } else {
       box.className = "status-box idle"; box.textContent = "Escolha o horário para ver se está livre.";
     }
-    saveBtn.textContent = conf.length ? "Salvar mesmo assim" : "Salvar";
+    const base = saveBtn.dataset.base || "Salvar";
+    saveBtn.textContent = conf.length ? (F.modo === "pedido" ? "Enviar mesmo assim" : "Salvar mesmo assim") : base;
     saveBtn.className = conf.length ? "btn warn" : "btn primary";
 
     const busy = activeOfDay(dia, F.id);
@@ -666,6 +746,19 @@ body { margin: 0; }
     const vtxt = $("f-valor").value.trim().replace(/^R\$\s*/i, "").replace(/\./g, "").replace(",", ".");
     const valor = vtxt === "" ? null : Number(vtxt);
     if (!cliente) { err.textContent = "Informe o nome da cliente."; $("f-cliente").focus(); return; }
+    if (F.modo === "pedido") {
+      if (!dia) { err.textContent = "Escolha a data."; return; }
+      if (!hora) { err.textContent = "Escolha o horário."; $("f-hora").focus(); return; }
+      F.saving = true; $("btn-save").disabled = true;
+      try {
+        await api("/api/pedido", { method: "POST", body: { cliente: cliente, servico: F.servico, dia: dia, hora: hora, duracao: svcOf(F.servico).duracao, obs: $("f-obs").value.trim() } });
+        closeSheet(); toast("Pedido enviado");
+        state.tab = "pedidos"; location.hash = "pedidos";
+        await loadAll();
+      } catch (e) { if (e.message !== "401") err.textContent = "Não foi possível enviar: " + e.message + "."; }
+      finally { F.saving = false; $("btn-save").disabled = false; }
+      return;
+    }
     if (!dia) { err.textContent = "Escolha a data."; return; }
     if (!hora) { err.textContent = "Escolha o horário."; $("f-hora").focus(); return; }
     if (!dur || dur < 5) { err.textContent = "Informe a duração em minutos."; $("f-dur").focus(); return; }
@@ -676,6 +769,10 @@ body { margin: 0; }
     try {
       const saved = await api("/api/item", { method: "POST", body: Object.assign({}, doc, F.id ? { id: F.id } : {}) });
       upsertLocal(saved);
+      if (F.modo === "aceitar" && F.pedido) {
+        try { await api("/api/pedido/resolver", { method: "POST", body: { id: F.pedido, status: "aceito" } }); } catch (e) {}
+        const pr = state.pedidos.find(x => x.id === F.pedido); if (pr) pr.status = "aceito";
+      }
       const d = parseYmd(dia);
       state.sel = dia; state.cal = { y: d.getFullYear(), m: d.getMonth() };
       state.tab = "agenda"; location.hash = "agenda";
@@ -738,6 +835,11 @@ body { margin: 0; }
     else if (a === "toggle-done") { const it = state.items.find(x => x.id === F.id); patchStatus(it && it.status === "concluido" ? "agendado" : "concluido"); }
     else if (a === "toggle-cancel") { const it = state.items.find(x => x.id === F.id); patchStatus(it && it.status === "cancelado" ? "agendado" : "cancelado"); }
     else if (a === "delete") deleteItem();
+    else if (a === "theme") toggleTheme();
+    else if (a === "exemplo") carregaExemplo();
+    else if (a === "ped-ok") openSheet({ pedido: t.dataset.id });
+    else if (a === "ped-no") resolvePedido(t.dataset.id, "recusado");
+    else if (a === "ped-cancel") apagaPedido(t.dataset.id);
     else if (a === "export") exportData();
     else if (a === "import") $("imp-file").click();
     else if (a === "logout") doLogout();
@@ -746,6 +848,35 @@ body { margin: 0; }
     else if (a === "invite") invite();
     else if (a === "uninvite") uninvite(t.dataset.e);
   });
+
+  async function resolvePedido(id, status) {
+    try {
+      await api("/api/pedido/resolver", { method: "POST", body: { id: id, status: status } });
+      const r = state.pedidos.find(x => x.id === id); if (r) r.status = status;
+      toast("Pedido recusado"); render();
+    } catch (e) { if (e.message !== "401") toast("Não foi possível responder"); }
+  }
+  async function apagaPedido(id) {
+    try {
+      await api("/api/pedido?id=" + encodeURIComponent(id), { method: "DELETE" });
+      state.pedidos = state.pedidos.filter(x => x.id !== id); render();
+    } catch (e) { if (e.message !== "401") toast("Não foi possível remover"); }
+  }
+  async function carregaExemplo() {
+    try { await api("/api/exemplo", { method: "POST" }); await loadAll(); toast("Lista de novembro carregada"); }
+    catch (e) { if (e.message !== "401") toast(e.message); }
+  }
+
+  /* tema: claro por padrão */
+  function applyTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    const b = $("ub-theme"); if (b) b.textContent = t === "dark" ? "☀️" : "🌙";
+  }
+  function toggleTheme() {
+    const t = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    try { localStorage.setItem("agenda-tema", t); } catch (e) {}
+    applyTheme(t);
+  }
 
   document.addEventListener("input", e => {
     const id = e.target.id;
@@ -758,6 +889,7 @@ body { margin: 0; }
   document.addEventListener("change", async e => {
     const el = e.target;
     if (el.id === "ub-agenda") { switchAgenda(el.value); return; }
+    if (el.dataset && el.dataset.papel) { invite(el.dataset.papel, el.value); return; }
     if (el.id === "imp-file") { importFile(el); return; }
     if (!el.dataset || !el.dataset.sv) return;
     const id = el.dataset.sv, cur = svcOf(id);
@@ -779,7 +911,7 @@ body { margin: 0; }
 
   function readHash() {
     const h = location.hash.replace("#", "");
-    if (["agenda", "historico", "servicos"].includes(h)) state.tab = h;
+    if (["agenda", "pedidos", "historico", "servicos"].includes(h)) state.tab = h;
   }
   window.addEventListener("hashchange", () => { readHash(); render(); });
 
@@ -845,8 +977,11 @@ body { margin: 0; }
     $("ub-text").textContent = u.nome ? u.nome + " · " + u.email : u.email;
     const sel = $("ub-agenda");
     sel.hidden = state.agendas.length < 2;
-    sel.innerHTML = state.agendas.map(a => '<option value="' + esc(a.id) + '"' + (a.id === state.agendaId ? " selected" : "") + ">" + esc(a.nome) + "</option>").join("");
+    sel.innerHTML = state.agendas.map(a => '<option value="' + esc(a.id) + '"' + (a.id === state.agendaId ? " selected" : "") + ">" + esc(a.nome) + (a.papel === "ver" ? " (só ver)" : "") + "</option>").join("");
     $("ub-share").hidden = state.agendaId !== u.sub;
+    const rp = $("ub-role");
+    rp.hidden = state.papel === "dono";
+    rp.textContent = state.papel === "ver" ? "Só visualização · você pode pedir horários" : "Você pode editar";
   }
 
   async function loadSessao() {
@@ -856,6 +991,7 @@ body { margin: 0; }
       let quer = state.agendaId;
       try { quer = quer || localStorage.getItem(AKEY); } catch (e) {}
       state.agendaId = state.agendas.some(a => a.id === quer) ? quer : s.user.sub;
+      const ag0 = state.agendas.find(a => a.id === state.agendaId); state.papel = ag0 ? ag0.papel : "dono";
       hideLogin(); renderUserbar(); state.loaded = false; render();
       await loadAll();
     } catch (e) { if (e.message !== "401") { state.erro = e.message; render(); } }
@@ -864,7 +1000,8 @@ body { margin: 0; }
   function switchAgenda(id) {
     state.agendaId = id;
     try { localStorage.setItem(AKEY, id); } catch (e) {}
-    state.items = []; state.svcOver = {}; state.loaded = false; state.erro = null;
+    state.items = []; state.svcOver = {}; state.pedidos = []; state.loaded = false; state.erro = null;
+    const ag = state.agendas.find(a => a.id === id); state.papel = ag ? ag.papel : "dono";
     renderUserbar(); render(); loadAll();
   }
 
@@ -882,6 +1019,7 @@ body { margin: 0; }
     try {
       const d = await api("/api/dados");
       state.items = d.items || []; state.svcOver = d.svcOver || {};
+      state.pedidos = d.pedidos || []; if (d.papel) state.papel = d.papel;
       state.loaded = true; state.erro = null;
       refresh();
     } catch (e) {
@@ -894,7 +1032,7 @@ body { margin: 0; }
     try { await api("/api/logout", { method: "POST" }); } catch (e) {}
     try { if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); } catch (e) {}
     closeSheet(); closeShare();
-    state.user = null; state.agendas = []; state.items = []; state.svcOver = {}; state.loaded = false; state.agendaId = null; state.erro = null;
+    state.user = null; state.agendas = []; state.items = []; state.svcOver = {}; state.pedidos = []; state.papel = "dono"; state.loaded = false; state.agendaId = null; state.erro = null;
     try { localStorage.removeItem(AKEY); } catch (e) {}
     renderUserbar(); render(); showLogin();
   }
@@ -907,17 +1045,18 @@ body { margin: 0; }
     $("f-conv").focus();
   }
   async function refreshConvidados() {
-    try { const d = await api("/api/convidados"); state.convidados = d.emails || []; }
+    try { const d = await api("/api/convidados"); state.convidados = d.convidados || []; }
     catch (e) { if (e.message !== "401") $("share-msg").textContent = "Não foi possível ler a lista."; return; }
     $("share-list").innerHTML = state.convidados.length
-      ? '<div class="glabel">Com acesso</div>' + state.convidados.map(em => '<div class="conv"><span>' + esc(em) + '</span><button class="btn sm danger" data-a="uninvite" data-e="' + esc(em) + '">Remover</button></div>').join("")
+      ? '<div class="glabel">Com acesso</div>' + state.convidados.map(c => '<div class="conv"><span>' + esc(c.email) + '</span><span class="acts"><select class="in" data-papel="' + esc(c.email) + '" aria-label="Permissão de ' + esc(c.email) + '"><option value="ver"' + (c.papel === "ver" ? " selected" : "") + '>Só ver e pedir</option><option value="editar"' + (c.papel === "editar" ? " selected" : "") + '>Pode editar</option></select><button class="btn sm danger" data-a="uninvite" data-e="' + esc(c.email) + '">Remover</button></span></div>').join("")
       : '<p class="help">Ninguém foi convidado ainda.</p>';
   }
-  async function invite() {
-    const v = $("f-conv").value.trim().toLowerCase(), msg = $("share-msg");
+  async function invite(email, papel) {
+    const novo = typeof email !== "string";
+    const v = novo ? $("f-conv").value.trim().toLowerCase() : email, msg = $("share-msg");
     msg.textContent = "";
     if (!v) return;
-    try { await api("/api/convidar", { method: "POST", body: { email: v } }); $("f-conv").value = ""; await refreshConvidados(); toast("Convite salvo"); }
+    try { await api("/api/convidar", { method: "POST", body: { email: v, papel: novo ? $("f-papel").value : papel } }); if (novo) $("f-conv").value = ""; await refreshConvidados(); toast(novo ? "Convite salvo" : "Permissão alterada"); }
     catch (e) { if (e.message !== "401") msg.textContent = e.message; }
   }
   async function uninvite(email) {
@@ -951,6 +1090,8 @@ body { margin: 0; }
   }
 
   function boot() {
+    let t = "light"; try { t = localStorage.getItem("agenda-tema") === "dark" ? "dark" : "light"; } catch (e) {}
+    applyTheme(t);
     readHash(); render(); loadSessao();
     setInterval(() => { if (!document.hidden) loadAll(true); }, 20000);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) loadAll(true); });

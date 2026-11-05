@@ -36,7 +36,8 @@ const DDL = [
   "CREATE TABLE IF NOT EXISTS ag_itens (agenda TEXT NOT NULL, id TEXT NOT NULL, cliente TEXT NOT NULL, servico TEXT NOT NULL, dia TEXT NOT NULL, hora TEXT NOT NULL, duracao INTEGER NOT NULL, valor REAL, obs TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'agendado', PRIMARY KEY (agenda, id))",
   "CREATE INDEX IF NOT EXISTS idx_ag_itens_dia ON ag_itens (agenda, dia)",
   "CREATE TABLE IF NOT EXISTS ag_servicos (agenda TEXT NOT NULL, id TEXT NOT NULL, nome TEXT NOT NULL, duracao INTEGER NOT NULL, valor REAL, PRIMARY KEY (agenda, id))",
-  "CREATE TABLE IF NOT EXISTS ag_acessos (agenda TEXT NOT NULL, email TEXT NOT NULL, PRIMARY KEY (agenda, email))",
+  "CREATE TABLE IF NOT EXISTS ag_acessos (agenda TEXT NOT NULL, email TEXT NOT NULL, papel TEXT NOT NULL DEFAULT 'editar', PRIMARY KEY (agenda, email))",
+  "CREATE TABLE IF NOT EXISTS ag_pedidos (agenda TEXT NOT NULL, id TEXT NOT NULL, de_email TEXT NOT NULL, de_nome TEXT NOT NULL DEFAULT '', cliente TEXT NOT NULL, servico TEXT NOT NULL, dia TEXT NOT NULL, hora TEXT NOT NULL, duracao INTEGER NOT NULL, obs TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'pendente', criado INTEGER NOT NULL, PRIMARY KEY (agenda, id))",
   "CREATE TABLE IF NOT EXISTS ag_meta (k TEXT PRIMARY KEY, v TEXT NOT NULL)"
 ];
 
@@ -54,6 +55,8 @@ function init(env) {
   if (!pronto) {
     pronto = (async () => {
       await env.DB.batch(DDL.map(q => env.DB.prepare(q)));
+      // bancos criados antes da coluna "papel"
+      try { await env.DB.prepare("ALTER TABLE ag_acessos ADD COLUMN papel TEXT NOT NULL DEFAULT 'editar'").run(); } catch (e) {}
       let r = await env.DB.prepare("SELECT v FROM ag_meta WHERE k = 'sess_key'").first();
       if (!r) {
         await env.DB.prepare("INSERT OR IGNORE INTO ag_meta (k, v) VALUES ('sess_key', ?)").bind(novoSegredo()).run();
@@ -111,10 +114,17 @@ async function usuarioDe(request) {
   return d ? { sub: d.s, email: d.e, nome: d.n || "" } : null;
 }
 
+// Devolve { id, papel } com papel "dono", "editar" ou "ver"; null se não tem acesso.
 async function agendaPermitida(env, user, id) {
-  if (!id || id === user.sub) return user.sub;
-  const r = await env.DB.prepare("SELECT 1 AS ok FROM ag_acessos WHERE agenda = ? AND email = ?").bind(id, user.email).first();
-  return r ? id : null;
+  if (!id || id === user.sub) return { id: user.sub, papel: "dono" };
+  const r = await env.DB.prepare("SELECT papel FROM ag_acessos WHERE agenda = ? AND email = ?").bind(id, user.email).first();
+  return r ? { id, papel: r.papel === "ver" ? "ver" : "editar" } : null;
+}
+
+function limpaPedido(o) {
+  if (!o || typeof o !== "object") return null;
+  const i = limpaItem(Object.assign({}, o, { duracao: o.duracao || 30, valor: null }));
+  return i;
 }
 
 async function semeia(env, sub) {
@@ -159,8 +169,6 @@ export default {
         await env.DB.prepare(
           "INSERT INTO ag_usuarios (sub, email, nome, criado) VALUES (?,?,?,?) ON CONFLICT(sub) DO UPDATE SET email=excluded.email, nome=excluded.nome"
         ).bind(g.sub, g.email, g.nome, Date.now()).run();
-        const r = await env.DB.prepare("INSERT OR IGNORE INTO ag_meta (k, v) VALUES ('seed', ?)").bind(g.sub).run();
-        if (r.meta && r.meta.changes === 1) await semeia(env, g.sub);
         const maxAge = SESSAO_DIAS * 86400;
         const valor = await assinaSessao({ s: g.sub, e: g.email, n: g.nome, x: Math.floor(Date.now() / 1000) + maxAge }, segredo);
         return json({ user: { sub: g.sub, email: g.email, nome: g.nome } }, 200, { "set-cookie": cookieDeSessao(valor, https, maxAge) });
@@ -175,27 +183,31 @@ export default {
 
       if (p === "/api/sessao" && m === "GET") {
         const rs = await env.DB.prepare(
-          "SELECT a.agenda AS id, u.nome AS nome, u.email AS email FROM ag_acessos a JOIN ag_usuarios u ON u.sub = a.agenda WHERE a.email = ? ORDER BY u.nome, u.email"
+          "SELECT a.agenda AS id, a.papel AS papel, u.nome AS nome, u.email AS email FROM ag_acessos a JOIN ag_usuarios u ON u.sub = a.agenda WHERE a.email = ? ORDER BY u.nome, u.email"
         ).bind(user.email).all();
-        const agendas = [{ id: user.sub, nome: "Minha agenda", dono: true }].concat(
-          rs.results.map(r => ({ id: r.id, nome: "Agenda de " + (r.nome || r.email), dono: false }))
+        const agendas = [{ id: user.sub, nome: "Minha agenda", dono: true, papel: "dono" }].concat(
+          rs.results.map(r => ({ id: r.id, nome: "Agenda de " + (r.nome || r.email), dono: false, papel: r.papel === "ver" ? "ver" : "editar" }))
         );
         return json({ user, agendas });
       }
 
       // Convites: só o dono mexe na própria lista.
       if (p === "/api/convidados" && m === "GET") {
-        const rs = await env.DB.prepare("SELECT email FROM ag_acessos WHERE agenda = ? ORDER BY email").bind(user.sub).all();
-        return json({ emails: rs.results.map(r => r.email) });
+        const rs = await env.DB.prepare("SELECT email, papel FROM ag_acessos WHERE agenda = ? ORDER BY email").bind(user.sub).all();
+        return json({ convidados: rs.results.map(r => ({ email: r.email, papel: r.papel === "ver" ? "ver" : "editar" })) });
       }
       if (p === "/api/convidar" && m === "POST") {
         const b = await request.json().catch(() => null);
         const email = String((b && b.email) || "").trim().toLowerCase();
         if (!/^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/.test(email)) return falha("e-mail inválido", 400);
         if (email === user.email) return falha("esse é o seu próprio e-mail", 400);
-        const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM ag_acessos WHERE agenda = ?").bind(user.sub).first();
-        if (n.n >= 10) return falha("limite de 10 convidados", 400);
-        await env.DB.prepare("INSERT OR IGNORE INTO ag_acessos (agenda, email) VALUES (?, ?)").bind(user.sub, email).run();
+        const papel = b && b.papel === "ver" ? "ver" : "editar";
+        const ja = await env.DB.prepare("SELECT 1 AS ok FROM ag_acessos WHERE agenda = ? AND email = ?").bind(user.sub, email).first();
+        if (!ja) {
+          const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM ag_acessos WHERE agenda = ?").bind(user.sub).first();
+          if (n.n >= 10) return falha("limite de 10 convidados", 400);
+        }
+        await env.DB.prepare("INSERT INTO ag_acessos (agenda, email, papel) VALUES (?,?,?) ON CONFLICT(agenda, email) DO UPDATE SET papel=excluded.papel").bind(user.sub, email, papel).run();
         return json({ ok: true });
       }
       if (p === "/api/convidar" && m === "DELETE") {
@@ -204,8 +216,12 @@ export default {
         return json({ ok: true });
       }
 
-      const agenda = await agendaPermitida(env, user, url.searchParams.get("agenda"));
-      if (!agenda) return falha("sem acesso", 403);
+      const perm = await agendaPermitida(env, user, url.searchParams.get("agenda"));
+      if (!perm) return falha("sem acesso", 403);
+      const agenda = perm.id;
+      const veSo = perm.papel === "ver";
+      const podeEditar = !veSo;
+      const SO_VER = "você só tem permissão para ver esta agenda";
 
       if (p === "/api/dados" && m === "GET") {
         const a = await env.DB.prepare(
@@ -214,8 +230,62 @@ export default {
         const s = await env.DB.prepare("SELECT id, nome, duracao, valor FROM ag_servicos WHERE agenda = ?").bind(agenda).all();
         const svcOver = {};
         s.results.forEach(r => { svcOver[r.id] = { nome: r.nome, duracao: r.duracao, valor: r.valor }; });
-        return json({ items: a.results, svcOver });
+        let items = a.results, over = svcOver;
+        let pq;
+        if (veSo) {
+          // quem só vê não enxerga valores
+          items = items.map(i => Object.assign({}, i, { valor: null }));
+          over = {};
+          Object.entries(svcOver).forEach(([k, o]) => { over[k] = { nome: o.nome, duracao: o.duracao, valor: null }; });
+          pq = await env.DB.prepare(
+            "SELECT id, de_email, de_nome, cliente, servico, dia, hora, duracao, obs, status, criado FROM ag_pedidos WHERE agenda = ? AND de_email = ? ORDER BY criado DESC LIMIT 30"
+          ).bind(agenda, user.email).all();
+        } else {
+          pq = await env.DB.prepare(
+            "SELECT id, de_email, de_nome, cliente, servico, dia, hora, duracao, obs, status, criado FROM ag_pedidos WHERE agenda = ? ORDER BY (status = 'pendente') DESC, criado DESC LIMIT 60"
+          ).bind(agenda).all();
+        }
+        return json({ items, svcOver: over, papel: perm.papel, pedidos: pq.results });
       }
+
+      // Pedido de horário (feito por quem tem acesso; o dono ou editor aceita ou recusa)
+      if (p === "/api/pedido" && m === "POST") {
+        const i = limpaPedido(await request.json().catch(() => null));
+        if (!i) return falha("dados inválidos", 400);
+        const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM ag_pedidos WHERE agenda = ? AND de_email = ? AND status = 'pendente'").bind(agenda, user.email).first();
+        if (n.n >= 10) return falha("você já tem 10 pedidos aguardando resposta", 400);
+        const id = "p-" + crypto.randomUUID().slice(0, 12);
+        await env.DB.prepare(
+          "INSERT INTO ag_pedidos (agenda, id, de_email, de_nome, cliente, servico, dia, hora, duracao, obs, status, criado) VALUES (?,?,?,?,?,?,?,?,?,?,'pendente',?)"
+        ).bind(agenda, id, user.email, user.nome || "", i.cliente, i.servico, i.dia, i.hora, i.duracao, i.obs, Date.now()).run();
+        return json({ ok: true, id });
+      }
+      if (p === "/api/pedido" && m === "DELETE") {
+        const id = url.searchParams.get("id") || "";
+        // quem pediu cancela o próprio pedido pendente; dono/editor apaga qualquer um
+        if (podeEditar) await env.DB.prepare("DELETE FROM ag_pedidos WHERE agenda = ? AND id = ?").bind(agenda, id).run();
+        else await env.DB.prepare("DELETE FROM ag_pedidos WHERE agenda = ? AND id = ? AND de_email = ?").bind(agenda, id, user.email).run();
+        return json({ ok: true });
+      }
+      if (p === "/api/pedido/resolver" && m === "POST") {
+        if (!podeEditar) return falha(SO_VER, 403);
+        const b = await request.json().catch(() => null);
+        const status = b && b.status === "aceito" ? "aceito" : (b && b.status === "recusado" ? "recusado" : null);
+        if (!status || !/^[A-Za-z0-9_-]{1,64}$/.test((b && b.id) || "")) return falha("dados inválidos", 400);
+        await env.DB.prepare("UPDATE ag_pedidos SET status = ? WHERE agenda = ? AND id = ?").bind(status, agenda, b.id).run();
+        return json({ ok: true });
+      }
+
+      // Carrega a lista de novembro (só dono, só se a agenda estiver vazia)
+      if (p === "/api/exemplo" && m === "POST") {
+        if (perm.papel !== "dono") return falha("só o dono da agenda pode fazer isso", 403);
+        const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM ag_itens WHERE agenda = ?").bind(agenda).first();
+        if (n.n > 0) return falha("a agenda já tem horários", 400);
+        await semeia(env, agenda);
+        return json({ ok: true, total: SEED.length });
+      }
+
+      if (["/api/item", "/api/servico", "/api/importar"].includes(p) && m !== "GET" && !podeEditar) return falha(SO_VER, 403);
 
       if (p === "/api/item" && m === "POST") {
         const item = limpaItem(await request.json().catch(() => null));
