@@ -3,7 +3,7 @@
   "main": "src/index.js",
   "compatibility_date": "2025-07-01",
   "vars": {
-    "GOOGLE_CLIENT_ID": ""
+    "GOOGLE_CLIENT_ID": "259412249579-1gksilqvbnj1bh2neehlus2mia3q7c6n.apps.googleusercontent.com"
   },
   "assets": {
     "directory": "./public",
